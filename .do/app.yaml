@@ -1,3 +1,7 @@
+domains:
+- domain: sonalyze.daywalker.dev
+  type: PRIMARY
+  zone: daywalker.dev
 features:
 - buildpack-stack=ubuntu-22
 ingress:
@@ -35,6 +39,12 @@ services:
     branch: main
     deploy_on_push: true
     repo: Shelbyb/sonalyze
+  health_check:
+    failure_threshold: 3
+    http_path: /api/health
+    initial_delay_seconds: 10
+    period_seconds: 15
+    timeout_seconds: 5
   http_port: 3000
   instance_count: 1
   instance_size_slug: basic-xxs

@@ -5,11 +5,14 @@
   <img src="https://img.shields.io/badge/React-19.3.0-blue?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-v4.3-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/Test_Coverage-87%25-1ed760?style=for-the-badge&logo=vitest&logoColor=black" alt="87% Coverage" />
+  <img src="https://img.shields.io/badge/Test_Coverage-88%25-1ed760?style=for-the-badge&logo=vitest&logoColor=black" alt="88% Coverage" />
   <img src="https://img.shields.io/badge/E2E_Tests-Playwright-2EAD33?style=for-the-badge&logo=playwright&logoColor=white" alt="Playwright E2E" />
   <img src="https://img.shields.io/badge/Security-0_Vulnerabilities-success?style=for-the-badge&logo=shield" alt="Security" />
   <img src="https://img.shields.io/badge/DigitalOcean-App_Platform-0080FF?style=for-the-badge&logo=digitalocean&logoColor=white" alt="DigitalOcean" />
+  <img src="https://img.shields.io/badge/Demo-sonalyze.daywalker.dev-purple?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Live Demo" />
 </p>
+
+> 🚀 **Live Working Demo**: [https://sonalyze.daywalker.dev](https://sonalyze.daywalker.dev)
 
 **Sonalyze** is a high-performance web application that transforms Spotify listening data into interactive visual profiles: 30-second streaming audio previews, real-time client-side search and filtering, audio DNA radar charts, sonic archetype analysis, CSV data exports, and smart playlist generation with direct Spotify synchronization.
 
@@ -54,11 +57,14 @@ No central database is required. Sessions are stored securely in browser-encrypt
 
 ---
 
-## 🌐 Subdomain Recommendation
+## 🌐 Live Production Demo & Domain
 
-- **Recommended Subdomain**: `sonalyze`
-  - Production URL: `https://sonalyze.ondigitalocean.app` or `https://sonalyze.daywalker.dev`
-  - Spotify Callback: `https://sonalyze.ondigitalocean.app/api/auth/callback/spotify`
+- **Live Production URL**: [https://sonalyze.daywalker.dev](https://sonalyze.daywalker.dev)
+- **Subdomain**: `sonalyze.daywalker.dev` (DigitalOcean App Platform)
+- **Spotify OAuth Callback**: `https://sonalyze.daywalker.dev/api/auth/callback/spotify`
+- **Container Health Check Endpoints**:
+  - `/api/health` — JSON status payload with uptime, timestamp, and HTTP 200 response
+  - `/healthz` — Lightweight liveness/readiness probe compliant with DigitalOcean and Kubernetes standards
 
 ---
 
@@ -68,7 +74,7 @@ No central database is required. Sessions are stored securely in browser-encrypt
 2. Click **Create app**.
 3. In **Redirect URIs**, add:
    - **Local development**: `http://localhost:3000/api/auth/callback/spotify`
-   - **Production**: `https://sonalyze.ondigitalocean.app/api/auth/callback/spotify` (or your custom domain)
+   - **Production**: `https://sonalyze.daywalker.dev/api/auth/callback/spotify` (and `https://sonalyze.ondigitalocean.app/api/auth/callback/spotify`)
 4. Save and copy your **Client ID** and **Client Secret**.
 
 ---
