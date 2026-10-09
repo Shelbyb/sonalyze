@@ -7,13 +7,21 @@
     "dev:secure": "next dev --experimental-https",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "validate": "npm run check:engines && npm run typecheck && npm run lint && npm run test",
+    "check:engines": "node -e \"const [major] = process.versions.node.split('.').map(Number); if (major < 22) { console.error('❌ Node.js >=22.0.0 required. Current: ' + process.version); process.exit(1); }\"",
     "sync:do": "./.githooks/pre-commit",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@11.17.0",
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "clsx": "^2.1.1",
@@ -25,6 +33,8 @@
     "recharts": "^2.12.7"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",

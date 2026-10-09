@@ -1,6 +1,8 @@
 # Sonalyze — Audio Intelligence & Spotify Listening Visualizer
 
 <p align="center">
+  <img src="https://img.shields.io/badge/Node.js-%3E%3D22.0.0-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js >=22" />
+  <img src="https://img.shields.io/badge/npm-%3E%3D10.0.0-CB3837?style=for-the-badge&logo=npm&logoColor=white" alt="npm >=10" />
   <img src="https://img.shields.io/badge/Next.js-16.4.0-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js 16" />
   <img src="https://img.shields.io/badge/React-19.3.0-blue?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
@@ -113,10 +115,20 @@ NEXTAUTH_URL=http://localhost:3000
 
 ## 💻 3. Local Development
 
+### System Requirements
+- **Node.js**: `>=22.0.0` (Active LTS / v24 recommended, managed via `.nvmrc` / `.node-version`)
+- **npm**: `>=10.0.0` (enforced via `engine-strict` in `.npmrc` and `packageManager` specification)
+
 Install dependencies and start the secure development server:
 
 ```bash
+# Switch to supported Node version (optional if using nvm/fnm)
+nvm use
+
+# Install dependencies with strict engine validation
 npm install
+
+# Start development server with TLS
 npm run dev:secure
 ```
 
@@ -126,7 +138,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🧪 4. Testing & Quality Assurance
 
-### Run Unit Tests & Coverage (87%+ Covered):
+### Run Full Quality & Type Validation:
+```bash
+npm run validate
+```
+
+### Run Unit Tests & Coverage (88% Covered):
 ```bash
 npm run test:coverage
 ```
