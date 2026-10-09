@@ -1,5 +1,6 @@
 import type { NextAuthOptions } from 'next-auth';
 import SpotifyProvider from 'next-auth/providers/spotify';
+import { validateServiceToken, requireServiceAuth } from '@/lib/daywalker-auth';
 
 // Scopes needed across the app: reading top items, recently played,
 // playlists, and creating/modifying playlists for the recommendation feature.
@@ -17,6 +18,7 @@ const SCOPES = [
 
 async function refreshAccessToken(token: any) {
   try {
+    await requireServiceAuth();
     const basic = Buffer.from(
       `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
     ).toString('base64');
@@ -66,7 +68,12 @@ export const authOptions: NextAuthOptions = {
     signIn: '/',
   },
   callbacks: {
+    async signIn() {
+      const authResult = await validateServiceToken();
+      return authResult.valid;
+    },
     async jwt({ token, account, profile }) {
+      await requireServiceAuth();
       if (account && profile) {
         return {
           ...token,
@@ -82,6 +89,10 @@ export const authOptions: NextAuthOptions = {
       return refreshAccessToken(token);
     },
     async session({ session, token }) {
+      const authResult = await validateServiceToken();
+      if (!authResult.valid) {
+        return null as any;
+      }
       (session as any).accessToken = (token as any).accessToken;
       (session as any).error = (token as any).error;
       (session as any).spotifyId = (token as any).spotifyId;

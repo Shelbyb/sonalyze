@@ -75,8 +75,8 @@ No central database is required. Sessions are stored securely in browser-encrypt
 1. Open the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) and log in.
 2. Click **Create app**.
 3. In **Redirect URIs**, add:
-   - **Local development**: `http://localhost:3000/api/auth/callback/spotify`
-   - **Production**: `https://sonalyze.daywalker.dev/api/auth/callback/spotify` (and `https://sonalyze.ondigitalocean.app/api/auth/callback/spotify`)
+   - **Local development**: `https://localhost:3000/api/auth/callback/spotify`
+   - **Production**: `https://<your_domain>/api/auth/callback/spotify` (and `https://<your_app_name>.ondigitalocean.app/api/auth/callback/spotify`)
 4. Save and copy your **Client ID** and **Client Secret**.
 
 ---
@@ -98,7 +98,7 @@ SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 
 # Authentication Secret (generate in terminal with `openssl rand -base64 48`)
 NEXTAUTH_SECRET=your-secure-random-nextauth-secret-min-32-chars
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=https://localhost:3000
 ```
 
 ### Environment Variables Reference
@@ -108,7 +108,7 @@ NEXTAUTH_URL=http://localhost:3000
 | `SPOTIFY_CLIENT_ID` | RUN_AND_BUILD_TIME, secret | Spotify Developer Application Client ID |
 | `SPOTIFY_CLIENT_SECRET` | RUN_AND_BUILD_TIME, secret | Spotify Developer Application Client Secret |
 | `NEXTAUTH_SECRET` | RUN_AND_BUILD_TIME, secret | Cryptographic secret used to sign and encrypt JWT cookies (`openssl rand -base64 48`) |
-| `NEXTAUTH_URL` | RUN_AND_BUILD_TIME | Canonical authentication URL (`http://localhost:3000` locally, `${APP_URL}` in production) |
+| `NEXTAUTH_URL` | RUN_AND_BUILD_TIME | Canonical authentication URL (`https://localhost:3000` locally, `${APP_URL}` in production) |
 | `NODE_ENV` | RUN_AND_BUILD_TIME | Application environment mode (`production` / `development`) |
 
 ---
@@ -132,7 +132,7 @@ npm install
 npm run dev:secure
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [https://localhost:3000](https://localhost:3000) in your browser.
 
 ---
 
@@ -160,7 +160,7 @@ npm run test:e2e
 The repository is pre-configured with `.do/app.yaml` and a hardened, multi-stage `Dockerfile` (`output: "standalone"`).
 
 ### Deploy via Control Panel or doctl CLI
-1. Push this repository to your GitHub repo (`Shelbyb/sonalyze`).
+1. Push this repository to your GitHub repo (`<username>/<repository_name>`).
 2. DigitalOcean App Platform automatically builds the multi-stage Docker image and executes health checks against `/api/health` before routing live traffic.
 3. Under **Environment Variables**, configure:
    - `SPOTIFY_CLIENT_ID`: Your client ID (Encrypted Secret)
@@ -168,7 +168,7 @@ The repository is pre-configured with `.do/app.yaml` and a hardened, multi-stage
    - `NEXTAUTH_SECRET`: Random 48-byte cryptographic secret (Encrypted Secret, generate with `openssl rand -base64 48`)
    - `NEXTAUTH_URL`: `${APP_URL}`
    - `NODE_ENV`: `production`
-4. Register the live callback URL (`https://sonalyze.daywalker.dev/api/auth/callback/spotify`) with the Spotify Developer Dashboard.
+4. Register the live callback URL (`https://<your_domain>/api/auth/callback/spotify`) with the Spotify Developer Dashboard.
 
 ---
 

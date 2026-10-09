@@ -13,6 +13,7 @@
 /.next/
 /out/
 /build
+/.turbo
 tsconfig.tsbuildinfo
 
 # Environment & Secrets (Crucial Security)
@@ -40,6 +41,7 @@ pnpm-debug.log*
 *.pem
 .idea/
 .vscode/
+.junie/
 *.suo
 *.ntvs*
 *.njsproj

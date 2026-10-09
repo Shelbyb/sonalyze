@@ -1,4 +1,11 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+
+vi.mock('@/lib/daywalker-auth', () => ({
+  requireServiceAuth: vi.fn().mockResolvedValue(undefined),
+  validateServiceToken: vi.fn().mockResolvedValue({ valid: true, status: 200 }),
+  clearServiceAuthCache: vi.fn(),
+}));
+
 import {
   clearSpotifyCache,
   getMe,
