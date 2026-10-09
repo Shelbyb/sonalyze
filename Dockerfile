@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -14,6 +14,9 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Ensure public folder exists
+RUN mkdir -p /app/public
 
 # Environment variables needed at build time
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -33,6 +36,8 @@ ENV HOSTNAME="0.0.0.0"
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
+# Ensure public folder exists in runner stage and copy assets
+RUN mkdir -p /app/public
 COPY --from=builder /app/public ./public
 
 # Automatically leverage output traces to reduce image size
