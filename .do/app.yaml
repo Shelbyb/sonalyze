@@ -1,0 +1,35 @@
+name: sonalyze
+region: nyc
+services:
+  - name: web
+    github:
+      branch: main
+      deploy_on_push: true
+      repo: Shelbyb/sonalyze
+    build_command: npm run build
+    run_command: npm start
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 3000
+    routes:
+      - path: /
+    envs:
+      - key: SPOTIFY_CLIENT_ID
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        description: Spotify Developer Client ID
+      - key: SPOTIFY_CLIENT_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        description: Spotify Developer Client Secret
+      - key: NEXTAUTH_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        description: Secret string used to sign and encrypt JWT session cookies
+      - key: NEXTAUTH_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${APP_URL}
+      - key: NODE_ENV
+        scope: RUN_AND_BUILD_TIME
+        value: production

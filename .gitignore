@@ -1,0 +1,50 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing & Coverage
+/coverage
+/playwright-report
+/test-results
+/blob-report
+
+# Next.js Build & Outputs
+/.next/
+/out/
+/build
+tsconfig.tsbuildinfo
+
+# Environment & Secrets (Crucial Security)
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Certificates & Keys
+certificates/
+*.pem
+*.key
+*.crt
+
+# Debug Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS & Editor Artifacts
+.DS_Store
+*.pem
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Vercel & DigitalOcean local caches
+.vercel

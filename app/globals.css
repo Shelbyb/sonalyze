@@ -1,0 +1,65 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+* {
+  scrollbar-color: #383838 transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #383838;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #0a0a0a;
+  color: #f5f3ee;
+}
+
+:focus-visible {
+  outline: 2px solid #1ed760;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.eq-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 16px;
+}
+.eq-bars span {
+  width: 3px;
+  background: currentColor;
+  border-radius: 2px;
+  animation: barPulse 1.1s ease-in-out infinite;
+  transform-origin: bottom;
+}
+.eq-bars span:nth-child(1) { height: 60%; animation-delay: -0.9s; }
+.eq-bars span:nth-child(2) { height: 100%; animation-delay: -0.4s; }
+.eq-bars span:nth-child(3) { height: 45%; animation-delay: -1.1s; }
+.eq-bars span:nth-child(4) { height: 80%; animation-delay: -0.2s; }
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
