@@ -4,6 +4,11 @@ import { validateServiceToken } from "@/lib/daywalker-auth";
 
 export const runtime = "nodejs";
 
+// Real Server Action IDs are hex hashes. Scanners probing for CVE-2025-55182 (React2Shell)
+// send junk like `Next-Action: x`, which Next.js rejects with a logged
+// "Server Reference ID did not match the expected format" error. Drop them up front.
+const SERVER_ACTION_ID_PATTERN = /^[0-9a-f]{40,}$/i;
+
 const BYPASS_PATHS = [
   "/api/health",
   "/healthz",
@@ -13,6 +18,15 @@ const BYPASS_PATHS = [
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  // 0. Reject malformed Server Action requests before routing or auth checks
+  const actionId = request.headers.get("next-action");
+  if (actionId !== null && !SERVER_ACTION_ID_PATTERN.test(actionId)) {
+    return NextResponse.json(
+      { error: "Bad Request", message: "Invalid Server Action request." },
+      { status: 400 }
+    );
+  }
 
   // 1. Bypass static files and health check probes
   if (
