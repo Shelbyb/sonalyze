@@ -11,11 +11,13 @@ export default function ArtistCard({
   rank?: number;
 }) {
   const img = artist.images?.[0]?.url;
+  const name = artist.name || 'Unknown Artist';
+  const spotifyUrl = artist.external_urls?.spotify || `https://open.spotify.com/artist/${artist.id}`;
 
   return (
     <a
       data-testid="artist-card"
-      href={artist.external_urls.spotify}
+      href={spotifyUrl}
       target="_blank"
       rel="noreferrer"
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/8 bg-panel/50 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:bg-panel hover:shadow-xl"
@@ -29,19 +31,19 @@ export default function ArtistCard({
         {img ? (
           <Image
             src={img}
-            alt={artist.name}
+            alt={name}
             fill
             sizes="(max-width: 640px) 160px, 220px"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-subtle">
-            {artist.name.charAt(0)}
+            {name.charAt(0)}
           </div>
         )}
       </div>
       <h3 className="truncate font-display text-sm font-semibold tracking-tight text-cream group-hover:text-accent transition-colors">
-        {artist.name}
+        {name}
       </h3>
       {artist.genres && artist.genres.length > 0 ? (
         <p className="mt-1 truncate text-xs text-subtle capitalize">

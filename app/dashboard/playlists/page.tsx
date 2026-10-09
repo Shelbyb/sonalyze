@@ -37,8 +37,8 @@ export default function PlaylistsPage() {
       const q = searchQuery.toLowerCase();
       result = result.filter(
         (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.owner.display_name?.toLowerCase().includes(q) ||
+          p.name?.toLowerCase().includes(q) ||
+          p.owner?.display_name?.toLowerCase().includes(q) ||
           p.description?.toLowerCase().includes(q)
       );
     }
@@ -137,6 +137,9 @@ export default function PlaylistsPage() {
         <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {filteredPlaylists.map((p) => {
             const img = p.images?.[0]?.url;
+            const spotifyUrl = p.external_urls?.spotify || `https://open.spotify.com/playlist/${p.id}`;
+            const trackCount = p.tracks?.total ?? 0;
+            const name = p.name || 'Untitled Playlist';
             return (
               <div
                 key={p.id}
@@ -144,7 +147,7 @@ export default function PlaylistsPage() {
               >
                 <div>
                   <a
-                    href={p.external_urls.spotify}
+                    href={spotifyUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="block"
@@ -153,7 +156,7 @@ export default function PlaylistsPage() {
                       {img ? (
                         <Image
                           src={img}
-                          alt={p.name}
+                          alt={name}
                           fill
                           sizes="(max-width: 640px) 160px, 200px"
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -165,13 +168,13 @@ export default function PlaylistsPage() {
                       )}
                     </div>
                     <h3 className="truncate font-display text-sm font-semibold tracking-tight text-cream group-hover:text-accent transition-colors">
-                      {p.name}
+                      {name}
                     </h3>
                   </a>
                   <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-subtle">
-                    {!p.public && <Lock className="h-3 w-3 shrink-0 text-amber-400" />}
-                    <span>{p.tracks.total} tracks</span>
-                    {p.owner.display_name && (
+                    {p.public === false && <Lock className="h-3 w-3 shrink-0 text-amber-400" />}
+                    <span>{trackCount} {trackCount === 1 ? 'track' : 'tracks'}</span>
+                    {p.owner?.display_name && (
                       <span className="truncate">· by {p.owner.display_name}</span>
                     )}
                   </p>
@@ -186,7 +189,7 @@ export default function PlaylistsPage() {
                     <span>Seed Mix</span>
                   </Link>
                   <a
-                    href={p.external_urls.spotify}
+                    href={spotifyUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="text-subtle hover:text-cream transition-colors"

@@ -44,7 +44,7 @@ export default function DiscoverPage() {
   useEffect(() => {
     if (!token) return;
     getUserPlaylists(token, 50)
-      .then((res) => setPlaylists(res.items.filter(Boolean)))
+      .then((res) => setPlaylists((res?.items || []).filter(Boolean)))
       .catch((e) => setError(e.message));
   }, [token]);
 
@@ -54,7 +54,7 @@ export default function DiscoverPage() {
     setError(null);
     try {
       const { items } = await getPlaylistTracks(token, selectedPlaylist, 30);
-      const trackIds = items.map((i) => i.track?.id).filter(Boolean) as string[];
+      const trackIds = (items || []).map((i) => i?.track?.id).filter(Boolean) as string[];
       const seedTracks = [...trackIds].sort(() => Math.random() - 0.5).slice(0, 5);
 
       if (seedTracks.length === 0) {
@@ -70,8 +70,9 @@ export default function DiscoverPage() {
         targetDanceability: danceability,
         limit: 20,
       });
-      setRecommendations(res.tracks);
-      setSelected(new Set(res.tracks.map((t) => t.id)));
+      const recTracks = res?.tracks || [];
+      setRecommendations(recTracks);
+      setSelected(new Set(recTracks.map((t) => t?.id).filter(Boolean)));
 
       const seedPlaylist = playlists?.find((p) => p.id === selectedPlaylist);
       setPlaylistName(`${seedPlaylist?.name ?? 'My mix'} — Recommended`);
@@ -118,7 +119,7 @@ export default function DiscoverPage() {
         playlist.id,
         chosen.map((t) => `spotify:track:${t.id}`)
       );
-      setSavedUrl(playlist.external_urls.spotify);
+      setSavedUrl(playlist.external_urls?.spotify || `https://open.spotify.com/playlist/${playlist.id}`);
       setStage('saved');
     } catch (e: any) {
       setError(e.message);
@@ -161,11 +162,15 @@ export default function DiscoverPage() {
                   className="w-full rounded-lg border border-white/10 bg-elevated px-4 py-2.5 text-sm text-cream focus:border-accent focus:outline-none"
                 >
                   <option value="">Select a playlist…</option>
-                  {playlists.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.tracks.total} tracks)
-                    </option>
-                  ))}
+                  {playlists.map((p) => {
+                    const count = p.tracks?.total;
+                    const countLabel = count !== undefined ? ` (${count} tracks)` : '';
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {p.name || 'Untitled Playlist'}{countLabel}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
