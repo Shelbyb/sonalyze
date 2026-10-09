@@ -6,6 +6,7 @@ export interface TokenValidationResponse {
   tokenId?: string;
   tokenName?: string;
   userId?: string;
+  stage?: "draft" | "testing" | "live" | string;
   rateLimit?: {
     limit: number;
     remaining: number;
@@ -14,6 +15,7 @@ export interface TokenValidationResponse {
   error?: string;
   message?: string;
   allowedOrigins?: string[];
+  retryAfter?: number;
 }
 
 export interface ServiceAuthResult {
@@ -243,6 +245,7 @@ export async function validateServiceToken(
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        "User-Agent": "Sonalyze-Auth-Gate/1.0",
         Origin: resolvedOrigin,
         Referer: resolvedOrigin,
         "X-Caller-Origin": resolvedOrigin,
@@ -252,10 +255,6 @@ export async function validateServiceToken(
       body: JSON.stringify({
         token,
         serviceSlug,
-        origin: resolvedOrigin,
-        callerOrigin: resolvedOrigin,
-        domain: hostOnly,
-        host: hostOnly,
       }),
       signal: controller.signal,
     });
@@ -263,6 +262,29 @@ export async function validateServiceToken(
     clearTimeout(timeoutId);
 
     const data = (await response.json().catch(() => ({}))) as TokenValidationResponse;
+
+    // Extract headers safely (supporting mock responses in tests without full Headers instances)
+    const rateLimitLimit = response.headers?.get ? response.headers.get("X-RateLimit-Limit") : null;
+    const rateLimitRemaining = response.headers?.get ? response.headers.get("X-RateLimit-Remaining") : null;
+    const rateLimitReset = response.headers?.get ? response.headers.get("X-RateLimit-Reset") : null;
+    const serviceStage = response.headers?.get ? response.headers.get("X-Service-Stage") : null;
+    const retryAfter = response.headers?.get ? response.headers.get("Retry-After") : null;
+
+    if (serviceStage && !data.stage) {
+      data.stage = serviceStage;
+    }
+
+    if (!data.rateLimit && rateLimitLimit) {
+      data.rateLimit = {
+        limit: parseInt(rateLimitLimit, 10),
+        remaining: parseInt(rateLimitRemaining || "0", 10),
+        reset: parseInt(rateLimitReset || "0", 10),
+      };
+    }
+
+    if (retryAfter && !data.retryAfter) {
+      data.retryAfter = parseInt(retryAfter, 10);
+    }
 
     if (response.ok && data.valid === true) {
       const success: ServiceAuthResult = {

@@ -195,7 +195,7 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
     expect(await resolveDynamicOrigin()).toBe('http://localhost:3000');
   });
 
-  it('sends dynamic origin headers and body fields during validation', async () => {
+  it('sends token and serviceSlug in body and caller origin headers during validation according to API docs', async () => {
     process.env.DAYWALKER_API_KEY = 'valid_token_123';
     let capturedHeaders: HeadersInit | undefined;
     let capturedBody: any;
@@ -203,21 +203,44 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
     global.fetch = vi.fn().mockImplementation(async (url, init) => {
       capturedHeaders = init?.headers;
       capturedBody = JSON.parse(init?.body);
+      const headers = new Headers();
+      headers.set('X-RateLimit-Limit', '120');
+      headers.set('X-RateLimit-Remaining', '115');
+      headers.set('X-RateLimit-Reset', '1775000000');
+      headers.set('X-Service-Stage', 'testing');
       return {
         ok: true,
         status: 200,
-        json: async () => ({ valid: true, serviceSlug: 'sonalyze' }),
+        headers,
+        json: async () => ({
+          valid: true,
+          serviceSlug: 'sonalyze',
+          tokenId: 'tok_123',
+          tokenName: 'Sonalyze Production',
+          userId: 'usr_abc',
+        }),
       };
     });
 
     const res = await validateServiceToken({ origin: 'https://my-custom-node.example.org:8443' });
     expect(res.valid).toBe(true);
-    expect(capturedBody.origin).toBe('https://my-custom-node.example.org:8443');
-    expect(capturedBody.callerOrigin).toBe('https://my-custom-node.example.org:8443');
-    expect(capturedBody.domain).toBe('my-custom-node.example.org:8443');
+    expect(capturedBody).toEqual({
+      token: 'valid_token_123',
+      serviceSlug: 'sonalyze',
+    });
     expect((capturedHeaders as any)['Origin']).toBe('https://my-custom-node.example.org:8443');
+    expect((capturedHeaders as any)['Referer']).toBe('https://my-custom-node.example.org:8443');
     expect((capturedHeaders as any)['X-Caller-Origin']).toBe('https://my-custom-node.example.org:8443');
     expect((capturedHeaders as any)['X-Forwarded-Host']).toBe('my-custom-node.example.org:8443');
+    expect((capturedHeaders as any)['User-Agent']).toBe('Sonalyze-Auth-Gate/1.0');
+
+    // Header extraction
+    expect(res.data?.stage).toBe('testing');
+    expect(res.data?.rateLimit).toEqual({
+      limit: 120,
+      remaining: 115,
+      reset: 1775000000,
+    });
   });
 
   it('maintains distinct cache entries for different caller origins', async () => {
@@ -297,6 +320,59 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
     expect(res.valid).toBe(false);
     expect(res.status).toBe(401);
     expect(res.error).toBe('InvalidToken');
+  });
+
+  it('handles 403 Forbidden with allowedOrigins details', async () => {
+    process.env.DAYWALKER_API_KEY = 'forbidden_token';
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      headers: new Headers(),
+      json: async () => ({
+        valid: false,
+        error: 'Forbidden',
+        message: "Caller 'unauthorized-domain.com' is not allowed for this API token.",
+        allowedOrigins: ['sonalyze.daywalker.dev', '127.0.0.1'],
+      }),
+    });
+
+    const res = await validateServiceToken();
+    expect(res.valid).toBe(false);
+    expect(res.status).toBe(403);
+    expect(res.error).toBe('Forbidden');
+    expect(res.data?.allowedOrigins).toEqual(['sonalyze.daywalker.dev', '127.0.0.1']);
+  });
+
+  it('handles 429 Too Many Requests with Retry-After header and rateLimit details', async () => {
+    process.env.DAYWALKER_API_KEY = 'rate_limited_token';
+    const headers = new Headers();
+    headers.set('Retry-After', '45');
+    headers.set('X-RateLimit-Limit', '60');
+    headers.set('X-RateLimit-Remaining', '0');
+    headers.set('X-RateLimit-Reset', '1775000060');
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers,
+      json: async () => ({
+        valid: false,
+        error: 'Too Many Requests',
+        message: "Rate limit of 60 req/min exceeded for service 'sonalyze'",
+        rateLimit: {
+          limit: 60,
+          remaining: 0,
+          reset: 1775000060,
+        },
+      }),
+    });
+
+    const res = await validateServiceToken();
+    expect(res.valid).toBe(false);
+    expect(res.status).toBe(429);
+    expect(res.error).toBe('Too Many Requests');
+    expect(res.data?.retryAfter).toBe(45);
+    expect(res.data?.rateLimit?.limit).toBe(60);
   });
 
   it('handles abort timeouts gracefully and returns 503', async () => {
