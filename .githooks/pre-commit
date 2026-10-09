@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -e
+
+# Pre-commit hook: Pull down the latest DigitalOcean App Platform spec to ensure sync before committing
+
+SPEC_FILE=".do/app.yaml"
+APP_NAME="sonalyze"
+
+echo "🔍 [pre-commit] Checking DigitalOcean App Platform configuration..."
+
+# Check if doctl is installed
+if ! command -v doctl &> /dev/null; then
+  echo "⚠️  [pre-commit] doctl CLI not found in PATH. Skipping DigitalOcean spec pull."
+  exit 0
+fi
+
+# Check if doctl is authenticated
+if ! doctl account get &> /dev/null; then
+  echo "⚠️  [pre-commit] doctl not authenticated. Skipping DigitalOcean spec pull."
+  exit 0
+fi
+
+# Find App ID for the app
+APP_ID=$(doctl apps list --format ID,Spec.Name --no-header 2>/dev/null | awk -v name="$APP_NAME" '$2 == name {print $1; exit}')
+
+if [ -z "$APP_ID" ]; then
+  # Fallback: check if only one app or find by name in JSON format
+  APP_ID=$(doctl apps list -o json 2>/dev/null | grep -B 2 "\"name\": \"$APP_NAME\"" | grep -o '"id": "[^"]*"' | head -n 1 | cut -d'"' -f4)
+fi
+
+if [ -n "$APP_ID" ]; then
+  echo "⬇️  [pre-commit] Pulling latest DigitalOcean app spec for '$APP_NAME' ($APP_ID)..."
+  mkdir -p .do
+  TMP_SPEC=$(mktemp)
+  
+  if doctl apps spec get "$APP_ID" --format yaml > "$TMP_SPEC" 2>/dev/null && [ -s "$TMP_SPEC" ]; then
+    # Compare with existing file
+    if [ ! -f "$SPEC_FILE" ] || ! cmp -s "$TMP_SPEC" "$SPEC_FILE"; then
+      mv "$TMP_SPEC" "$SPEC_FILE"
+      echo "✅ [pre-commit] Updated $SPEC_FILE with latest remote DigitalOcean configuration."
+      git add "$SPEC_FILE"
+    else
+      echo "✅ [pre-commit] $SPEC_FILE is already up to date with DigitalOcean."
+      rm -f "$TMP_SPEC"
+    fi
+  else
+    echo "⚠️  [pre-commit] Failed to fetch spec for App ID $APP_ID. Proceeding with existing local file."
+    rm -f "$TMP_SPEC"
+  fi
+else
+  echo "ℹ️  [pre-commit] App '$APP_NAME' not found on DigitalOcean. Proceeding with existing local spec."
+fi
+
+exit 0

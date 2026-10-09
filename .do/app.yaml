@@ -1,35 +1,42 @@
+features:
+- buildpack-stack=ubuntu-22
+ingress:
+  rules:
+  - component:
+      name: web
+    match:
+      path:
+        prefix: /
 name: sonalyze
 region: nyc
 services:
-  - name: web
-    github:
-      branch: main
-      deploy_on_push: true
-      repo: Shelbyb/sonalyze
-    build_command: npm run build
-    run_command: npm start
-    environment_slug: node-js
-    instance_count: 1
-    instance_size_slug: basic-xxs
-    http_port: 3000
-    routes:
-      - path: /
-    envs:
-      - key: SPOTIFY_CLIENT_ID
-        scope: RUN_AND_BUILD_TIME
-        type: SECRET
-        description: Spotify Developer Client ID
-      - key: SPOTIFY_CLIENT_SECRET
-        scope: RUN_AND_BUILD_TIME
-        type: SECRET
-        description: Spotify Developer Client Secret
-      - key: NEXTAUTH_SECRET
-        scope: RUN_AND_BUILD_TIME
-        type: SECRET
-        description: Secret string used to sign and encrypt JWT session cookies
-      - key: NEXTAUTH_URL
-        scope: RUN_AND_BUILD_TIME
-        value: ${APP_URL}
-      - key: NODE_ENV
-        scope: RUN_AND_BUILD_TIME
-        value: production
+- build_command: npm run build
+  environment_slug: node-js
+  envs:
+  - key: SPOTIFY_CLIENT_ID
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: EV[1:uJeDHKTAhrlI78QVodZywynG0trvdUz9:kyzqvehO4otXGqLjSt3l1A==]
+  - key: SPOTIFY_CLIENT_SECRET
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: EV[1:LTDw8pifyTsR1/5PQnjujjl9czunF43x:1PuTnzBPRDKqC74fIUDBqw==]
+  - key: NEXTAUTH_SECRET
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: EV[1:WuC0VLNEjuRByVElUxAuu19pYP0s45/T:YUCcVoHR8oP5po/EpCVuAA==]
+  - key: NEXTAUTH_URL
+    scope: RUN_AND_BUILD_TIME
+    value: ${APP_URL}
+  - key: NODE_ENV
+    scope: RUN_AND_BUILD_TIME
+    value: production
+  github:
+    branch: main
+    deploy_on_push: true
+    repo: Shelbyb/sonalyze
+  http_port: 3000
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  name: web
+  run_command: npm start
