@@ -556,6 +556,29 @@ describe('Perimeter Middleware (middleware.ts)', () => {
     expect(imageRes.status).toBe(200);
   });
 
+  it('rejects malformed Next-Action headers (React2Shell scanner probes) before auth checks', async () => {
+    const fetchMock = vi.fn();
+    global.fetch = fetchMock;
+
+    const probe = new NextRequest('http://localhost:3000/', { method: 'POST', headers: { 'Next-Action': 'x' } });
+    const res = await middleware(probe);
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('Bad Request');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('lets well-formed Server Action IDs through to normal handling', async () => {
+    process.env.DAYWALKER_API_KEY = 'valid_key';
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ valid: true }) });
+
+    const req = new NextRequest('http://localhost:3000/dashboard', {
+      method: 'POST',
+      headers: { 'Next-Action': '7f'.repeat(21) },
+    });
+    const res = await middleware(req);
+    expect(res.headers.get('x-middleware-next')).toBe('1');
+  });
+
   it('redirects web traffic to /service-error when unauthenticated', async () => {
     delete process.env.DAYWALKER_API_KEY;
     delete process.env.DAYWALKER_SERVICE_TOKEN;
