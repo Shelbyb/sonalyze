@@ -56,6 +56,8 @@ export const REQUEST_TIMEOUT_MS = 5_000;
 
 export function clearServiceAuthCache(): void {
   authCache.clear();
+  warnedOnce.clear();
+  lastFailureLog = null;
 }
 
 function resolveSecretValue(rawValue: string): string | null {
@@ -186,6 +188,21 @@ export function getDaywalkerServiceSlug(): string {
   );
 }
 
+export const LOCAL_FALLBACK_ORIGIN = "http://localhost:3000";
+
+/**
+ * True only for hostnames Daywalker can reach and DNS-verify: never internal bind
+ * addresses (0.0.0.0, localhost, 127.x, ::1), bare IPs, or single-label container names.
+ */
+export function isPublicHostname(hostname: string): boolean {
+  const host = hostname.trim().toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+  // IPv6 literals contain ":"; IPv4 arrives dotted-quad since WHATWG URL normalizes
+  // forms like 127.1, 0x7f.0.0.1, and 2130706433. (No node:net: this module reaches client bundles.)
+  if (!host || host.includes(":") || /^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return false;
+  if (host === "localhost" || host.endsWith(".localhost")) return false;
+  return host.includes(".");
+}
+
 function cleanOrigin(raw: string): string {
   let trimmed = raw.trim();
   if (!trimmed) return "";
@@ -202,6 +219,17 @@ function cleanOrigin(raw: string): string {
     return parsed.origin;
   } catch {
     return trimmed.replace(/\/+$/, "");
+  }
+}
+
+/** Normalizes a URL or bare host to an origin, or null if it isn't a public host. */
+function toPublicOrigin(raw: string | null | undefined): string | null {
+  if (!raw || typeof raw !== "string" || !raw.trim()) return null;
+  try {
+    const origin = cleanOrigin(raw);
+    return isPublicHostname(new URL(origin).hostname) ? origin : null;
+  } catch {
+    return null;
   }
 }
 
@@ -233,83 +261,119 @@ function extractOriginFromHeaders(headers: {
   return null;
 }
 
-export async function resolveDynamicOrigin(input?: {
+/**
+ * Resolves the app's public origin (e.g. https://sonalyze.daywalker.dev), or null when
+ * none is available. Server-side config always wins over request-derived values: inside
+ * the App Platform container the request URL is the internal bind address
+ * (http://0.0.0.0:3000), and Host headers are client-controlled. Internal and IP hosts
+ * are skipped at every step.
+ */
+export async function resolvePublicOrigin(input?: {
   origin?: string;
   req?: any;
-}): Promise<string> {
-  // 1. Explicit verified origin parameter
-  if (input?.origin && typeof input.origin === "string" && input.origin.trim().length > 0) {
-    return cleanOrigin(input.origin);
+}): Promise<string | null> {
+  // 1. Server-authoritative configuration (tamper-proof from clients)
+  const signingDomain = process.env.DAYWALKER_SIGNING_DOMAIN?.trim();
+  const configured = [
+    signingDomain ? `https://${signingDomain.replace(/^https?:\/\//, "")}` : "",
+    process.env.APP_URL,
+    process.env.NEXTAUTH_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "",
+    process.env.SITE_URL,
+    process.env.PUBLIC_URL,
+  ];
+  for (const candidate of configured) {
+    const origin = toPublicOrigin(candidate);
+    if (origin) return origin;
   }
 
-  // 2. Server-authoritative environment variables (highest trust, tamper-proof from clients)
-  const envUrl =
-    process.env.APP_URL ||
-    process.env.NEXTAUTH_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
-    process.env.SITE_URL ||
-    process.env.PUBLIC_URL ||
-    "";
+  // 2. Explicit origin hint from the caller
+  const fromOption = toPublicOrigin(input?.origin);
+  if (fromOption) return fromOption;
 
-  if (envUrl.trim()) {
-    return cleanOrigin(envUrl.trim());
-  }
-
-  // 3. Extract from server-side request context
+  // 3. Server-side request context
   if (input?.req) {
     const req = input.req;
     if (req.headers && typeof req.headers.get === "function") {
-      const fromHeaders = extractOriginFromHeaders(req.headers);
+      const fromHeaders = toPublicOrigin(extractOriginFromHeaders(req.headers));
       if (fromHeaders) return fromHeaders;
     }
     if (req.nextUrl && req.nextUrl.origin && req.nextUrl.origin !== "null") {
-      return cleanOrigin(req.nextUrl.origin);
+      const fromNextUrl = toPublicOrigin(req.nextUrl.origin);
+      if (fromNextUrl) return fromNextUrl;
     }
     if (typeof req.url === "string" && req.url.trim()) {
       try {
-        const parsed = new URL(req.url);
-        if (parsed.origin && parsed.origin !== "null") {
-          return parsed.origin;
-        }
+        const fromUrl = toPublicOrigin(new URL(req.url).origin);
+        if (fromUrl) return fromUrl;
       } catch {
         // ignore
       }
     }
   }
 
-  // 4. Attempt to read from Next.js server headers (in App Router server components / route handlers)
+  // 4. Next.js server headers (in App Router server components / route handlers)
   try {
     const { headers } = await import("next/headers");
     const headerList = await headers();
     if (headerList && typeof headerList.get === "function") {
-      const fromHeaders = extractOriginFromHeaders(headerList);
+      const fromHeaders = toPublicOrigin(extractOriginFromHeaders(headerList));
       if (fromHeaders) return fromHeaders;
     }
   } catch {
     // Expected outside of active request context
   }
 
-  // 5. Default local fallback
-  return "http://localhost:3000";
+  return null;
+}
+
+/** Public origin, falling back to http://localhost:3000 for local development. */
+export async function resolveDynamicOrigin(input?: {
+  origin?: string;
+  req?: any;
+}): Promise<string> {
+  return (await resolvePublicOrigin(input)) ?? LOCAL_FALLBACK_ORIGIN;
 }
 
 /**
- * Domain whose /.well-known/daywalker-keys.json publishes our public key. Prefers the
- * explicit DAYWALKER_SIGNING_DOMAIN; otherwise uses the resolved origin's hostname.
- * Local hosts are skipped since the auth server can't fetch their JWKS.
+ * Domain whose /.well-known/daywalker-keys.json publishes our public key: the explicit
+ * DAYWALKER_SIGNING_DOMAIN, else the public origin's hostname. Never an IP or internal
+ * host, since Daywalker can't fetch their JWKS.
  */
-export function getSigningDomain(resolvedOrigin: string): string | null {
+export function getSigningDomain(publicOrigin: string | null): string | null {
   const explicit = process.env.DAYWALKER_SIGNING_DOMAIN?.trim();
-  if (explicit) return explicit;
-  try {
-    const { hostname } = new URL(resolvedOrigin);
-    if (!hostname || hostname === "localhost" || hostname === "0.0.0.0" || hostname.startsWith("127.")) {
-      return null;
-    }
-    return hostname;
-  } catch {
-    return null;
+  for (const candidate of [explicit, publicOrigin]) {
+    const origin = toPublicOrigin(candidate);
+    if (origin) return new URL(origin).hostname;
   }
+  return null;
+}
+
+// --- Misconfiguration logging (visible in DigitalOcean runtime logs) ---
+
+const warnedOnce = new Set<string>();
+const FAILURE_LOG_INTERVAL_MS = 60_000;
+let lastFailureLog: { signature: string; at: number } | null = null;
+
+function warnOnceInProduction(key: string, message: string): void {
+  if (process.env.NODE_ENV !== "production" || warnedOnce.has(key)) return;
+  warnedOnce.add(key);
+  console.warn(`[daywalker-auth] ${message}`);
+}
+
+function logValidationFailure(status: number, error: string | undefined, message: string | undefined, token: string): void {
+  // Daywalker's message is logged for diagnosis; redact the token in case it is ever echoed back
+  const redact = (value?: string) => (value ? value.split(token).join("[redacted]") : "");
+  const signature = `${status}|${redact(error)}|${redact(message)}`;
+  const now = Date.now();
+  // Middleware validates on every request and failures aren't cached, so throttle repeats
+  if (lastFailureLog && lastFailureLog.signature === signature && now - lastFailureLog.at < FAILURE_LOG_INTERVAL_MS) {
+    return;
+  }
+  lastFailureLog = { signature, at: now };
+  console.error(
+    `[daywalker-auth] Token validation failed: status=${status} error=${JSON.stringify(redact(error))} message=${JSON.stringify(redact(message))}`
+  );
 }
 
 export async function validateServiceToken(
@@ -331,8 +395,8 @@ export async function validateServiceToken(
     return failure;
   }
 
-  const resolvedOrigin = await resolveDynamicOrigin(options);
-  const cacheKey = `${token}:${resolvedOrigin}`;
+  const publicOrigin = await resolvePublicOrigin(options);
+  const cacheKey = `${token}:${publicOrigin ?? ""}`;
   const now = Date.now();
   const cached = authCache.get(cacheKey);
 
@@ -346,18 +410,36 @@ export async function validateServiceToken(
   // The signature covers the exact body bytes, so serialize once and send this string
   const body = JSON.stringify({ token, serviceSlug });
 
-  // Origin / Referer / X-Caller-Origin are the spec's unsigned hostname hints (DNS-matched)
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json",
     "User-Agent": "Sonalyze-Auth-Gate/1.0",
-    Origin: resolvedOrigin,
-    Referer: resolvedOrigin,
-    "X-Caller-Origin": resolvedOrigin,
   };
 
+  // Origin / Referer / X-Caller-Origin are the spec's unsigned hostname hints (DNS-matched).
+  // Only send them when they carry the real public origin, never an internal bind address.
+  if (publicOrigin) {
+    headers.Origin = publicOrigin;
+    headers.Referer = publicOrigin;
+    headers["X-Caller-Origin"] = publicOrigin;
+  }
+
   const signingKey = getDaywalkerSigningKey();
-  const signingDomain = getSigningDomain(resolvedOrigin);
+  const signingDomain = getSigningDomain(publicOrigin);
+  if (!signingKey) {
+    warnOnceInProduction(
+      "signing-key",
+      process.env.DAYWALKER_SIGNING_KEY?.trim()
+        ? "DAYWALKER_SIGNING_KEY is invalid; validate requests are unsigned and domain allowlist entries will not match."
+        : "DAYWALKER_SIGNING_KEY is not set; validate requests are unsigned and domain allowlist entries will not match."
+    );
+  }
+  if (!signingDomain) {
+    warnOnceInProduction(
+      "signing-domain",
+      "No public signing domain resolved; set DAYWALKER_SIGNING_DOMAIN or APP_URL. Validate requests are unsigned."
+    );
+  }
   if (signingKey && signingDomain) {
     Object.assign(
       headers,
@@ -433,11 +515,12 @@ export async function validateServiceToken(
     };
 
     authCache.delete(cacheKey);
+    logValidationFailure(failure.status, failure.error, failure.message, token);
     return failure;
   } catch (error) {
     authCache.delete(cacheKey);
     const isAbort = error instanceof Error && error.name === "AbortError";
-    return {
+    const failure: ServiceAuthResult = {
       valid: false,
       status: 503,
       error: isAbort ? "Request Timeout" : "Service Unavailable",
@@ -447,6 +530,8 @@ export async function validateServiceToken(
             error instanceof Error ? error.message : "Unknown error"
           }`,
     };
+    logValidationFailure(failure.status, failure.error, failure.message, token);
+    return failure;
   } finally {
     clearTimeout(timeoutId);
   }
