@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import React from 'react';
 import { vi } from 'vitest';
 
-process.env.DAYWALKER_API_KEY = 'dw_live_test_valid_key_12345';
+process.env.DAYWALKER_API_KEY = 'srv_live_test_valid_key_12345';
 process.env.DAYWALKER_SERVICE_SLUG = 'sonalyze';
 process.env.DAYWALKER_AUTH_URL = 'https://auth.daywalker.dev';
 process.env.NEXTAUTH_SECRET = 'test-secret-min-32-chars-long-abcdef123456';
