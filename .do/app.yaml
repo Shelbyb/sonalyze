@@ -35,7 +35,7 @@ services:
   - key: DAYWALKER_API_KEY
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: EV[1:Lk3EEXbxjS4LodWuhVnMyPOJ8Oq7Q92a:i3Y1eeZDnJ7ECvtbCKVWaYcSJPBPVhjRtqDqmBs0ninw9HlMLMMcHKoBEN9+2tBBM54hbmBLfsDJq4gicv8Wm+yEJciYfHQCHLcwxeKlhsP4YHLVUJ9O4AE=]
+    value: EV[1:MmqHgR18QKIuDreRzN9oY01E3TlSOsyA:1y6b9o7S0CCE9MH9FZEZr+6EBt3G2XfpCmkyTF0vrOl7qhU2IHIfiM39j3zKQtvIXSwCKqMqs9QsCEdDni+DyvQU3wKaai7Ey2sT5+dXudgO1/xFKVfObIU=]
   github:
     branch: main
     deploy_on_push: true

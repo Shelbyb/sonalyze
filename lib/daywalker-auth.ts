@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { decrypt } from "@/lib/encryption";
 
 export interface TokenValidationResponse {
@@ -57,24 +58,119 @@ export function clearServiceAuthCache(): void {
   authCache.clear();
 }
 
-export function getResolvedServiceApiKey(): string | null {
-  const rawKey =
-    process.env.DAYWALKER_API_KEY ||
-    process.env.DAYWALKER_SERVICE_TOKEN ||
-    process.env.SERVICE_API_KEY ||
-    "";
-
-  const trimmed = rawKey.trim();
+function resolveSecretValue(rawValue: string): string | null {
+  const trimmed = rawValue.trim();
   if (!trimmed) return null;
 
   try {
     const decrypted = decrypt(trimmed);
     if (decrypted) return decrypted.trim();
   } catch {
-    // Fallback to literal key if decryption fails
+    // Fallback to literal value if decryption fails
   }
 
   return trimmed;
+}
+
+export function getResolvedServiceApiKey(): string | null {
+  return resolveSecretValue(
+    process.env.DAYWALKER_API_KEY ||
+      process.env.DAYWALKER_SERVICE_TOKEN ||
+      process.env.SERVICE_API_KEY ||
+      ""
+  );
+}
+
+// --- Domain request signing (X-Daywalker-* headers) ---
+// Per https://auth.daywalker.dev/docs, domain/wildcard allowlist entries only match a
+// *proven* hostname. Signing each validate request with an Ed25519 key whose public half
+// is published at https://<domain>/.well-known/daywalker-keys.json works from any host/CDN,
+// unlike Origin headers which require the domain's DNS to point at our egress IP.
+
+export const SIGNATURE_VERSION = "daywalker-v1";
+export const VALIDATE_PATH = "/api/v1/tokens/validate";
+
+export interface DaywalkerSigningKey {
+  privateKey: crypto.KeyObject;
+  publicJwk: { kty: "OKP"; crv: "Ed25519"; x: string; kid: string; use: "sig"; alg: "EdDSA" };
+}
+
+let signingKeyCache: { source: string; key: DaywalkerSigningKey | null } | null = null;
+
+/**
+ * Loads the Ed25519 signing key from DAYWALKER_SIGNING_KEY. Accepts a PKCS#8 PEM
+ * (literal "\n" escapes allowed), base64-encoded PKCS#8 DER, or an `enc:v1:` encrypted
+ * form of either. Returns null when signing is not configured.
+ */
+export function getDaywalkerSigningKey(): DaywalkerSigningKey | null {
+  const source = process.env.DAYWALKER_SIGNING_KEY || "";
+  if (signingKeyCache && signingKeyCache.source === source) return signingKeyCache.key;
+
+  let key: DaywalkerSigningKey | null = null;
+  const resolved = resolveSecretValue(source);
+  if (resolved) {
+    try {
+      const privateKey = resolved.includes("-----BEGIN")
+        ? crypto.createPrivateKey(resolved.replace(/\\n/g, "\n"))
+        : crypto.createPrivateKey({ key: Buffer.from(resolved, "base64"), format: "der", type: "pkcs8" });
+      if (privateKey.asymmetricKeyType !== "ed25519") {
+        throw new Error(`expected an ed25519 key, got ${privateKey.asymmetricKeyType}`);
+      }
+      const { x } = crypto.createPublicKey(privateKey).export({ format: "jwk" }) as { x: string };
+      // RFC 7638 JWK thumbprint as a stable key id
+      const kid = crypto
+        .createHash("sha256")
+        .update(JSON.stringify({ crv: "Ed25519", kty: "OKP", x }))
+        .digest("base64url");
+      key = { privateKey, publicJwk: { kty: "OKP", crv: "Ed25519", x, kid, use: "sig", alg: "EdDSA" } };
+    } catch (error) {
+      console.error(
+        "[daywalker-auth] DAYWALKER_SIGNING_KEY is set but could not be loaded; requests will be unsigned.",
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  signingKeyCache = { source, key };
+  return key;
+}
+
+/** Public JWKS served at /.well-known/daywalker-keys.json */
+export function getDaywalkerJwks(): { keys: DaywalkerSigningKey["publicJwk"][] } {
+  const key = getDaywalkerSigningKey();
+  return { keys: key ? [key.publicJwk] : [] };
+}
+
+export function buildSignedRequestHeaders(params: {
+  method: string;
+  path: string;
+  domain: string;
+  body: string;
+  key: DaywalkerSigningKey;
+  timestamp?: number;
+  nonce?: string;
+}): Record<string, string> {
+  const timestamp = String(params.timestamp ?? Math.floor(Date.now() / 1000));
+  const nonce = params.nonce ?? crypto.randomBytes(24).toString("base64url");
+  const bodyHash = crypto.createHash("sha256").update(params.body).digest("hex");
+  const payload = [
+    SIGNATURE_VERSION,
+    params.method.toUpperCase(),
+    params.path,
+    params.domain,
+    timestamp,
+    nonce,
+    bodyHash,
+  ].join("\n");
+  const signature = crypto.sign(null, Buffer.from(payload), params.key.privateKey).toString("base64url");
+
+  return {
+    "X-Daywalker-Domain": params.domain,
+    "X-Daywalker-Key-Id": params.key.publicJwk.kid,
+    "X-Daywalker-Timestamp": timestamp,
+    "X-Daywalker-Nonce": nonce,
+    "X-Daywalker-Signature": signature,
+  };
 }
 
 export function getDaywalkerAuthUrl(): string {
@@ -197,6 +293,25 @@ export async function resolveDynamicOrigin(input?: {
   return "http://localhost:3000";
 }
 
+/**
+ * Domain whose /.well-known/daywalker-keys.json publishes our public key. Prefers the
+ * explicit DAYWALKER_SIGNING_DOMAIN; otherwise uses the resolved origin's hostname.
+ * Local hosts are skipped since the auth server can't fetch their JWKS.
+ */
+export function getSigningDomain(resolvedOrigin: string): string | null {
+  const explicit = process.env.DAYWALKER_SIGNING_DOMAIN?.trim();
+  if (explicit) return explicit;
+  try {
+    const { hostname } = new URL(resolvedOrigin);
+    if (!hostname || hostname === "localhost" || hostname === "0.0.0.0" || hostname.startsWith("127.")) {
+      return null;
+    }
+    return hostname;
+  } catch {
+    return null;
+  }
+}
+
 export async function validateServiceToken(
   options?: ValidateServiceTokenOptions
 ): Promise<ServiceAuthResult> {
@@ -225,41 +340,47 @@ export async function validateServiceToken(
     return cached.result;
   }
 
-  let hostOnly: string;
-  try {
-    hostOnly = new URL(resolvedOrigin).host;
-  } catch {
-    hostOnly = resolvedOrigin.replace(/^https?:\/\//, "").split("/")[0];
-  }
-
   const authUrl = getDaywalkerAuthUrl();
   const serviceSlug = getDaywalkerServiceSlug();
-  const endpoint = `${authUrl}/api/v1/tokens/validate`;
+  const endpoint = `${authUrl}${VALIDATE_PATH}`;
+  // The signature covers the exact body bytes, so serialize once and send this string
+  const body = JSON.stringify({ token, serviceSlug });
+
+  // Origin / Referer / X-Caller-Origin are the spec's unsigned hostname hints (DNS-matched)
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "User-Agent": "Sonalyze-Auth-Gate/1.0",
+    Origin: resolvedOrigin,
+    Referer: resolvedOrigin,
+    "X-Caller-Origin": resolvedOrigin,
+  };
+
+  const signingKey = getDaywalkerSigningKey();
+  const signingDomain = getSigningDomain(resolvedOrigin);
+  if (signingKey && signingDomain) {
+    Object.assign(
+      headers,
+      buildSignedRequestHeaders({
+        method: "POST",
+        path: VALIDATE_PATH,
+        domain: signingDomain,
+        body,
+        key: signingKey,
+      })
+    );
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "User-Agent": "Sonalyze-Auth-Gate/1.0",
-        Origin: resolvedOrigin,
-        Referer: resolvedOrigin,
-        "X-Caller-Origin": resolvedOrigin,
-        "X-Origin": resolvedOrigin,
-        "X-Forwarded-Host": hostOnly,
-      },
-      body: JSON.stringify({
-        token,
-        serviceSlug,
-      }),
+      headers,
+      body,
       signal: controller.signal,
     });
-
-    clearTimeout(timeoutId);
 
     const data = (await response.json().catch(() => ({}))) as TokenValidationResponse;
 
@@ -326,6 +447,8 @@ export async function validateServiceToken(
             error instanceof Error ? error.message : "Unknown error"
           }`,
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 

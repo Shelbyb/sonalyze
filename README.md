@@ -110,6 +110,10 @@ NEXTAUTH_URL=https://localhost:3000
 | `NEXTAUTH_SECRET` | RUN_AND_BUILD_TIME, secret | Cryptographic secret used to sign and encrypt JWT cookies (`openssl rand -base64 48`) |
 | `NEXTAUTH_URL` | RUN_AND_BUILD_TIME | Canonical authentication URL (`https://localhost:3000` locally, `${APP_URL}` in production) |
 | `NODE_ENV` | RUN_AND_BUILD_TIME | Application environment mode (`production` / `development`) |
+| `DAYWALKER_API_KEY` | RUN_AND_BUILD_TIME, secret | Daywalker service API token (`srv_live_...`, or `enc:v1:` encrypted) validated via `POST /api/v1/tokens/validate` |
+| `DAYWALKER_SERVICE_SLUG` | RUN_AND_BUILD_TIME | Daywalker service slug (default `sonalyze`) |
+| `DAYWALKER_SIGNING_KEY` | RUN_TIME, secret, optional | Ed25519 PKCS#8 key (`openssl genpkey -algorithm ed25519 -outform DER \| base64`) used to sign validate requests with `X-Daywalker-*` headers so domain allowlists work behind App Platform's edge. Public JWKS is served at `/.well-known/daywalker-keys.json` |
+| `DAYWALKER_SIGNING_DOMAIN` | RUN_TIME, optional | Domain the signature is issued for; must serve the JWKS (defaults to the app origin's hostname) |
 
 ---
 

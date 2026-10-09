@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
+import crypto from 'node:crypto';
 import {
   deriveKey,
   getMasterSecret,
@@ -24,7 +25,12 @@ import {
   clearServiceAuthCache,
   ServiceAuthError,
   CACHE_TTL_MS,
+  getDaywalkerSigningKey,
+  getDaywalkerJwks,
+  getSigningDomain,
+  buildSignedRequestHeaders,
 } from '@/lib/daywalker-auth';
+import { GET as jwksGet } from '@/app/.well-known/daywalker-keys.json/route';
 import ServiceErrorPage from '@/app/service-error/page';
 import { middleware } from '@/middleware';
 import { NextRequest } from 'next/server';
@@ -231,7 +237,10 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
     expect((capturedHeaders as any)['Origin']).toBe('https://my-custom-node.example.org:8443');
     expect((capturedHeaders as any)['Referer']).toBe('https://my-custom-node.example.org:8443');
     expect((capturedHeaders as any)['X-Caller-Origin']).toBe('https://my-custom-node.example.org:8443');
-    expect((capturedHeaders as any)['X-Forwarded-Host']).toBe('my-custom-node.example.org:8443');
+    // Non-spec headers must not be sent; unsigned requests carry no X-Daywalker-* headers
+    expect((capturedHeaders as any)['X-Forwarded-Host']).toBeUndefined();
+    expect((capturedHeaders as any)['X-Origin']).toBeUndefined();
+    expect((capturedHeaders as any)['X-Daywalker-Signature']).toBeUndefined();
     expect((capturedHeaders as any)['User-Agent']).toBe('Sonalyze-Auth-Gate/1.0');
 
     // Header extraction
@@ -240,6 +249,104 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
       limit: 120,
       remaining: 115,
       reset: 1775000000,
+    });
+  });
+
+  describe('domain request signing', () => {
+    const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519');
+    const pkcs8Der = privateKey.export({ format: 'der', type: 'pkcs8' }).toString('base64');
+    const pkcs8Pem = privateKey.export({ format: 'pem', type: 'pkcs8' }).toString();
+
+    function verify(headers: Record<string, string>, body: string, method = 'POST', path = '/api/v1/tokens/validate') {
+      const payload = [
+        'daywalker-v1',
+        method,
+        path,
+        headers['X-Daywalker-Domain'],
+        headers['X-Daywalker-Timestamp'],
+        headers['X-Daywalker-Nonce'],
+        crypto.createHash('sha256').update(body).digest('hex'),
+      ].join('\n');
+      return crypto.verify(null, Buffer.from(payload), publicKey, Buffer.from(headers['X-Daywalker-Signature'], 'base64url'));
+    }
+
+    it('loads base64 DER, escaped PEM, and encrypted keys; rejects non-ed25519 keys', () => {
+      process.env.DAYWALKER_SIGNING_KEY = pkcs8Der;
+      const fromDer = getDaywalkerSigningKey();
+      expect(fromDer?.publicJwk).toMatchObject({ kty: 'OKP', crv: 'Ed25519', alg: 'EdDSA', use: 'sig' });
+      expect(fromDer?.publicJwk.x).toBe((publicKey.export({ format: 'jwk' }) as { x: string }).x);
+
+      process.env.DAYWALKER_SIGNING_KEY = pkcs8Pem.replace(/\n/g, '\\n');
+      expect(getDaywalkerSigningKey()?.publicJwk.kid).toBe(fromDer?.publicJwk.kid);
+
+      process.env.DAYWALKER_SIGNING_KEY = encrypt(pkcs8Der);
+      expect(getDaywalkerSigningKey()?.publicJwk.kid).toBe(fromDer?.publicJwk.kid);
+
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      process.env.DAYWALKER_SIGNING_KEY = crypto
+        .generateKeyPairSync('ec', { namedCurve: 'P-256' })
+        .privateKey.export({ format: 'der', type: 'pkcs8' })
+        .toString('base64');
+      expect(getDaywalkerSigningKey()).toBeNull();
+      expect(errSpy).toHaveBeenCalled();
+
+      delete process.env.DAYWALKER_SIGNING_KEY;
+      expect(getDaywalkerSigningKey()).toBeNull();
+      expect(getDaywalkerJwks()).toEqual({ keys: [] });
+    });
+
+    it('produces spec-compliant signed headers', () => {
+      process.env.DAYWALKER_SIGNING_KEY = pkcs8Der;
+      const key = getDaywalkerSigningKey()!;
+      const body = '{"token":"t","serviceSlug":"sonalyze"}';
+      const headers = buildSignedRequestHeaders({ method: 'post', path: '/api/v1/tokens/validate', domain: 'sonalyze.daywalker.dev', body, key });
+
+      expect(headers['X-Daywalker-Domain']).toBe('sonalyze.daywalker.dev');
+      expect(headers['X-Daywalker-Key-Id']).toBe(key.publicJwk.kid);
+      expect(Math.abs(Number(headers['X-Daywalker-Timestamp']) - Date.now() / 1000)).toBeLessThan(5);
+      expect(headers['X-Daywalker-Nonce']).toMatch(/^[A-Za-z0-9_-]{16,128}$/);
+      expect(verify(headers, body)).toBe(true);
+      expect(verify(headers, body + ' ')).toBe(false);
+    });
+
+    it('resolves the signing domain from env override or origin hostname, skipping local hosts', () => {
+      expect(getSigningDomain('https://sonalyze.daywalker.dev:8443')).toBe('sonalyze.daywalker.dev');
+      expect(getSigningDomain('http://localhost:3000')).toBeNull();
+      expect(getSigningDomain('http://127.0.0.1:3000')).toBeNull();
+      process.env.DAYWALKER_SIGNING_DOMAIN = 'sonalyze.daywalker.dev';
+      expect(getSigningDomain('http://localhost:3000')).toBe('sonalyze.daywalker.dev');
+    });
+
+    it('signs the exact validate request body when a signing key is configured', async () => {
+      process.env.DAYWALKER_API_KEY = 'srv_live_signed';
+      process.env.DAYWALKER_SIGNING_KEY = pkcs8Der;
+      let captured: { headers: Record<string, string>; body: string; url: string } | undefined;
+      global.fetch = vi.fn().mockImplementation(async (url, init) => {
+        captured = { headers: init.headers, body: init.body, url: String(url) };
+        return { ok: true, status: 200, json: async () => ({ valid: true, serviceSlug: 'sonalyze' }) };
+      });
+
+      const res = await validateServiceToken({ origin: 'https://sonalyze.daywalker.dev' });
+      expect(res.valid).toBe(true);
+      expect(captured!.url).toBe('https://auth.daywalker.dev/api/v1/tokens/validate');
+      expect(captured!.headers['X-Daywalker-Domain']).toBe('sonalyze.daywalker.dev');
+      expect(verify(captured!.headers, captured!.body)).toBe(true);
+    });
+
+    it('serves the public JWKS at /.well-known/daywalker-keys.json', async () => {
+      process.env.DAYWALKER_SIGNING_KEY = pkcs8Der;
+      const res = jwksGet();
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.keys).toHaveLength(1);
+      expect(json.keys[0]).toEqual(getDaywalkerSigningKey()!.publicJwk);
+      expect(json.keys[0].d).toBeUndefined();
+    });
+
+    it('lets the JWKS path bypass the service auth middleware', async () => {
+      delete process.env.DAYWALKER_API_KEY;
+      const res = await middleware(new NextRequest('http://localhost:3000/.well-known/daywalker-keys.json'));
+      expect(res.headers.get('x-middleware-next')).toBe('1');
     });
   });
 
