@@ -3,8 +3,8 @@ import { validateServiceToken } from '@/lib/daywalker-auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  const serviceAuth = await validateServiceToken().catch(() => ({
+export async function GET(request: Request) {
+  const serviceAuth = await validateServiceToken({ req: request }).catch(() => ({
     valid: false,
     status: 503,
     error: 'Service Check Error',

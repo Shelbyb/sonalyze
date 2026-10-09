@@ -18,6 +18,7 @@ import {
   getResolvedServiceApiKey,
   getDaywalkerAuthUrl,
   getDaywalkerServiceSlug,
+  resolveDynamicOrigin,
   validateServiceToken,
   requireServiceAuth,
   clearServiceAuthCache,
@@ -140,6 +141,104 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
     process.env.DAYWALKER_SERVICE_SLUG = 'custom-slug';
     expect(getDaywalkerAuthUrl()).toBe('https://custom-auth.example.com');
     expect(getDaywalkerServiceSlug()).toBe('custom-slug');
+  });
+
+  it('resolves dynamic origins from input, host headers, request URLs, and environment variables without trusting spoofed client headers', async () => {
+    // 1. Explicit origin parameter
+    expect(await resolveDynamicOrigin({ origin: 'https://custom-domain.org' })).toBe('https://custom-domain.org');
+    expect(await resolveDynamicOrigin({ origin: 'custom-domain.org' })).toBe('https://custom-domain.org');
+    expect(await resolveDynamicOrigin({ origin: 'localhost:8080' })).toBe('http://localhost:8080');
+
+    // 2. Ignores spoofed client headers like x-caller-origin, origin, referer
+    delete process.env.APP_URL;
+    delete process.env.NEXTAUTH_URL;
+    delete process.env.VERCEL_URL;
+
+    const reqWithSpoofedClientHeaders = new Request('http://localhost:3000/api/health', {
+      headers: {
+        'x-caller-origin': 'https://spoofed-whitelisted-site.com',
+        'x-origin': 'https://spoofed-whitelisted-site.com',
+        'origin': 'https://spoofed-whitelisted-site.com',
+        'referer': 'https://spoofed-whitelisted-site.com/some/path',
+      },
+    });
+    // Should NOT resolve to the spoofed site; should resolve to server URL or localhost
+    expect(await resolveDynamicOrigin({ req: reqWithSpoofedClientHeaders })).toBe('http://localhost:3000');
+
+    // 3. From Request with authentic destination Host headers
+    const reqWithHost = new Request('http://localhost:3000/api/health', {
+      headers: {
+        'x-forwarded-host': 'sonalyze.daywalker.dev',
+        'x-forwarded-proto': 'https',
+      },
+    });
+    expect(await resolveDynamicOrigin({ req: reqWithHost })).toBe('https://sonalyze.daywalker.dev');
+
+    const reqWithUrlOnly = new Request('https://192.168.1.100:3000/dashboard');
+    expect(await resolveDynamicOrigin({ req: reqWithUrlOnly })).toBe('https://192.168.1.100:3000');
+
+    // 4. From server-authoritative environment variables (highest priority)
+    process.env.APP_URL = 'https://app-url.example.com';
+    expect(await resolveDynamicOrigin()).toBe('https://app-url.example.com');
+    // Even if req has a host header, server env variable wins for tamper-proof resolution
+    expect(await resolveDynamicOrigin({ req: reqWithHost })).toBe('https://app-url.example.com');
+
+    delete process.env.APP_URL;
+    process.env.NEXTAUTH_URL = 'https://nextauth.example.com';
+    expect(await resolveDynamicOrigin()).toBe('https://nextauth.example.com');
+
+    delete process.env.NEXTAUTH_URL;
+    process.env.VERCEL_URL = 'preview-branch.vercel.app';
+    expect(await resolveDynamicOrigin()).toBe('https://preview-branch.vercel.app');
+
+    delete process.env.VERCEL_URL;
+    expect(await resolveDynamicOrigin()).toBe('http://localhost:3000');
+  });
+
+  it('sends dynamic origin headers and body fields during validation', async () => {
+    process.env.DAYWALKER_API_KEY = 'valid_token_123';
+    let capturedHeaders: HeadersInit | undefined;
+    let capturedBody: any;
+
+    global.fetch = vi.fn().mockImplementation(async (url, init) => {
+      capturedHeaders = init?.headers;
+      capturedBody = JSON.parse(init?.body);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ valid: true, serviceSlug: 'sonalyze' }),
+      };
+    });
+
+    const res = await validateServiceToken({ origin: 'https://my-custom-node.example.org:8443' });
+    expect(res.valid).toBe(true);
+    expect(capturedBody.origin).toBe('https://my-custom-node.example.org:8443');
+    expect(capturedBody.callerOrigin).toBe('https://my-custom-node.example.org:8443');
+    expect(capturedBody.domain).toBe('my-custom-node.example.org:8443');
+    expect((capturedHeaders as any)['Origin']).toBe('https://my-custom-node.example.org:8443');
+    expect((capturedHeaders as any)['X-Caller-Origin']).toBe('https://my-custom-node.example.org:8443');
+    expect((capturedHeaders as any)['X-Forwarded-Host']).toBe('my-custom-node.example.org:8443');
+  });
+
+  it('maintains distinct cache entries for different caller origins', async () => {
+    process.env.DAYWALKER_API_KEY = 'valid_token_cache';
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ valid: true, serviceSlug: 'sonalyze' }),
+    });
+    global.fetch = fetchMock;
+
+    await validateServiceToken({ origin: 'https://site-a.com' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Call from site-a should hit cache
+    await validateServiceToken({ origin: 'https://site-a.com' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Call from site-b should perform a new fetch
+    await validateServiceToken({ origin: 'https://site-b.com' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('fails with 401 when API key is missing', async () => {
