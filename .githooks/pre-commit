@@ -50,7 +50,15 @@ if ! npm run lint; then
 fi
 echo "   ✅ ESLint verified with 0 issues"
 
-# 4. Pull down latest DigitalOcean App Platform spec to ensure sync before committing
+# 4. Enforce Unit Test Suite
+echo "🧪 [pre-commit] Running unit test suite..."
+if ! npm test; then
+  echo "❌ [pre-commit] Unit tests failed! Please ensure all tests pass before committing."
+  exit 1
+fi
+echo "   ✅ All unit tests passed"
+
+# 5. Pull down latest DigitalOcean App Platform spec to ensure sync before committing
 SPEC_FILE=".do/app.yaml"
 APP_NAME="sonalyze"
 

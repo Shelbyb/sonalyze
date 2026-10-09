@@ -32,6 +32,10 @@ services:
   - key: NODE_ENV
     scope: RUN_AND_BUILD_TIME
     value: production
+  - key: DAYWALKER_API_KEY
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: EV[1:Lk3EEXbxjS4LodWuhVnMyPOJ8Oq7Q92a:i3Y1eeZDnJ7ECvtbCKVWaYcSJPBPVhjRtqDqmBs0ninw9HlMLMMcHKoBEN9+2tBBM54hbmBLfsDJq4gicv8Wm+yEJciYfHQCHLcwxeKlhsP4YHLVUJ9O4AE=]
   github:
     branch: main
     deploy_on_push: true

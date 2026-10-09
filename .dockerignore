@@ -20,4 +20,6 @@ certificates
 .vscode
 README.md
 .do
+.githooks
+.junie
 tsconfig.tsbuildinfo
