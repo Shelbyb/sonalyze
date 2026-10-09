@@ -65,7 +65,7 @@ export default function TrackRow({
         {img ? (
           <Image
             src={img}
-            alt={track.album.name}
+            alt={track.album?.name || track.name || 'Track cover'}
             fill
             sizes="48px"
             className="object-cover"
@@ -81,7 +81,7 @@ export default function TrackRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <a
-            href={track.external_urls.spotify}
+            href={track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`}
             target="_blank"
             rel="noreferrer"
             className={`block truncate text-sm font-medium transition-colors hover:underline ${
@@ -97,7 +97,7 @@ export default function TrackRow({
           )}
         </div>
         <p className="truncate text-xs text-subtle">
-          {track.artists.map((a) => a.name).join(', ')}
+          {(track.artists || []).map((a) => a.name).join(', ')}
           {meta ? ` · ${meta}` : ''}
         </p>
       </div>

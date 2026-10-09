@@ -14,8 +14,11 @@ import {
 } from '@/components/Skeleton';
 import { AudioPlayerProvider, useAudioPlayer } from '@/components/AudioPlayerContext';
 import GlobalPlayer from '@/components/GlobalPlayer';
+import PlaylistsPage from '@/app/dashboard/playlists/page';
+import DiscoverPage from '@/app/dashboard/discover/page';
+import * as spotifyLib from '@/lib/spotify';
 import { signIn, signOut } from 'next-auth/react';
-import type { SpotifyTrack } from '@/types/spotify';
+import type { SpotifyTrack, SpotifyPlaylist } from '@/types/spotify';
 
 describe('Extra Components and Edge Cases', () => {
   it('renders LoginButton in both sizes and triggers signIn', () => {
@@ -168,5 +171,106 @@ describe('Extra Components and Edge Cases', () => {
     await act(async () => {
       fireEvent.keyDown(window, { code: 'Space' });
     });
+  });
+
+  it('renders PlaylistsPage correctly even with playlists missing tracks or owner data', async () => {
+    const mockPlaylists: any[] = [
+      {
+        id: 'pl-1',
+        name: 'Chill Vibes',
+        description: 'Mellow tunes',
+        images: [{ url: 'https://example.com/chill.jpg' }],
+        tracks: { total: 42 },
+        owner: { display_name: 'Alex', id: 'alex' },
+        external_urls: { spotify: 'https://open.spotify.com/playlist/pl-1' },
+        public: true,
+      },
+      {
+        id: 'pl-2',
+        name: 'Radio Mix',
+        description: null,
+        images: [],
+        tracks: undefined, // Missing tracks object
+        owner: { display_name: undefined, id: 'unknown' },
+        external_urls: undefined,
+        public: false,
+      },
+      {
+        id: 'pl-3',
+        name: 'Single Track Playlist',
+        description: 'Solo song',
+        images: [],
+        tracks: { total: 1 },
+        owner: { display_name: 'DJ', id: 'dj' },
+        external_urls: { spotify: 'https://open.spotify.com/playlist/pl-3' },
+        public: true,
+      },
+    ];
+
+    vi.spyOn(spotifyLib, 'getUserPlaylists').mockResolvedValueOnce({
+      items: mockPlaylists,
+      total: 3,
+      limit: 50,
+      offset: 0,
+      href: '',
+      next: null,
+      previous: null,
+    } as any);
+
+    await act(async () => {
+      render(<PlaylistsPage />);
+    });
+
+    expect(screen.getByText('Chill Vibes')).toBeInTheDocument();
+    expect(screen.getByText('42 tracks')).toBeInTheDocument();
+    expect(screen.getByText('Radio Mix')).toBeInTheDocument();
+    expect(screen.getByText('0 tracks')).toBeInTheDocument();
+    expect(screen.getByText('Single Track Playlist')).toBeInTheDocument();
+    expect(screen.getByText('1 track')).toBeInTheDocument();
+
+    // Test Search filter
+    const searchInput = screen.getByPlaceholderText('Search playlists…');
+    fireEvent.change(searchInput, { target: { value: 'Chill' } });
+    expect(screen.getByText('Chill Vibes')).toBeInTheDocument();
+    expect(screen.queryByText('Radio Mix')).not.toBeInTheDocument();
+
+    // Test Privacy filter
+    fireEvent.change(searchInput, { target: { value: '' } });
+    const privateFilterBtn = screen.getByRole('button', { name: 'private' });
+    fireEvent.click(privateFilterBtn);
+    expect(screen.getByText('Radio Mix')).toBeInTheDocument();
+    expect(screen.queryByText('Chill Vibes')).not.toBeInTheDocument();
+  });
+
+  it('renders DiscoverPage seed playlist selector safely when tracks is undefined', async () => {
+    const mockPlaylists: any[] = [
+      {
+        id: 'pl-broken',
+        name: 'Corrupted Playlist',
+        tracks: undefined,
+      },
+      {
+        id: 'pl-valid',
+        name: 'Valid Playlist',
+        tracks: { total: 15 },
+      },
+    ];
+
+    vi.spyOn(spotifyLib, 'getUserPlaylists').mockResolvedValueOnce({
+      items: mockPlaylists,
+      total: 2,
+      limit: 50,
+      offset: 0,
+      href: '',
+      next: null,
+      previous: null,
+    } as any);
+
+    await act(async () => {
+      render(<DiscoverPage />);
+    });
+
+    expect(screen.getByText('Corrupted Playlist')).toBeInTheDocument();
+    expect(screen.getByText('Valid Playlist (15 tracks)')).toBeInTheDocument();
   });
 });

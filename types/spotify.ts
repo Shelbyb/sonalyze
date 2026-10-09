@@ -57,12 +57,12 @@ export interface RecentlyPlayedItem {
 export interface SpotifyPlaylist {
   id: string;
   name: string;
-  description: string;
-  images: SpotifyImage[];
-  tracks: { total: number };
-  owner: { display_name: string; id: string };
-  external_urls: { spotify: string };
-  public: boolean;
+  description?: string | null;
+  images?: SpotifyImage[];
+  tracks?: { total?: number; href?: string };
+  owner?: { display_name?: string; id?: string };
+  external_urls?: { spotify?: string };
+  public?: boolean;
 }
 
 export interface SpotifyUser {

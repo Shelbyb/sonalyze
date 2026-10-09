@@ -120,7 +120,7 @@ export default function TopTracksPage() {
       const uris = filteredTracks.map((t) => `spotify:track:${t.id}`);
 
       const playlist = await createPlaylistWithTracks(token, me.id, name, description, uris, false);
-      setSavedPlaylistUrl(playlist.external_urls.spotify);
+      setSavedPlaylistUrl(playlist.external_urls?.spotify || `https://open.spotify.com/playlist/${playlist.id}`);
     } catch (e: any) {
       setError(e.message);
     } finally {
