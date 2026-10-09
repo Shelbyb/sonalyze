@@ -37,12 +37,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Validate token against Daywalker Auth using dynamic request origin
-  const dynamicOrigin = request.nextUrl.origin;
-  const authResult = await validateServiceToken({
-    req: request,
-    origin: dynamicOrigin,
-  });
+  // 2. Validate token against Daywalker Auth. The public origin comes from server config
+  // (request.nextUrl.origin is the container's internal bind address, e.g. http://0.0.0.0:3000)
+  const authResult = await validateServiceToken({ req: request });
 
   // 3. Handle service error page route
   if (pathname === "/service-error") {

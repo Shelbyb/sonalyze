@@ -20,6 +20,8 @@ import {
   getDaywalkerAuthUrl,
   getDaywalkerServiceSlug,
   resolveDynamicOrigin,
+  resolvePublicOrigin,
+  isPublicHostname,
   validateServiceToken,
   requireServiceAuth,
   clearServiceAuthCache,
@@ -149,17 +151,16 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
     expect(getDaywalkerServiceSlug()).toBe('custom-slug');
   });
 
-  it('resolves dynamic origins from input, host headers, request URLs, and environment variables without trusting spoofed client headers', async () => {
-    // 1. Explicit origin parameter
+  it('resolves the public origin with server config first, never trusting spoofed client headers', async () => {
+    for (const key of ['DAYWALKER_SIGNING_DOMAIN', 'APP_URL', 'NEXTAUTH_URL', 'VERCEL_URL', 'SITE_URL', 'PUBLIC_URL']) {
+      delete process.env[key];
+    }
+
+    // 1. Explicit origin hint (only when nothing is configured)
     expect(await resolveDynamicOrigin({ origin: 'https://custom-domain.org' })).toBe('https://custom-domain.org');
     expect(await resolveDynamicOrigin({ origin: 'custom-domain.org' })).toBe('https://custom-domain.org');
-    expect(await resolveDynamicOrigin({ origin: 'localhost:8080' })).toBe('http://localhost:8080');
 
     // 2. Ignores spoofed client headers like x-caller-origin, origin, referer
-    delete process.env.APP_URL;
-    delete process.env.NEXTAUTH_URL;
-    delete process.env.VERCEL_URL;
-
     const reqWithSpoofedClientHeaders = new Request('http://localhost:3000/api/health', {
       headers: {
         'x-caller-origin': 'https://spoofed-whitelisted-site.com',
@@ -168,11 +169,11 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
         'referer': 'https://spoofed-whitelisted-site.com/some/path',
       },
     });
-    // Should NOT resolve to the spoofed site; should resolve to server URL or localhost
+    expect(await resolvePublicOrigin({ req: reqWithSpoofedClientHeaders })).toBeNull();
     expect(await resolveDynamicOrigin({ req: reqWithSpoofedClientHeaders })).toBe('http://localhost:3000');
 
     // 3. From Request with authentic destination Host headers
-    const reqWithHost = new Request('http://localhost:3000/api/health', {
+    const reqWithHost = new Request('http://0.0.0.0:3000/api/health', {
       headers: {
         'x-forwarded-host': 'sonalyze.daywalker.dev',
         'x-forwarded-proto': 'https',
@@ -180,18 +181,24 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
     });
     expect(await resolveDynamicOrigin({ req: reqWithHost })).toBe('https://sonalyze.daywalker.dev');
 
-    const reqWithUrlOnly = new Request('https://192.168.1.100:3000/dashboard');
-    expect(await resolveDynamicOrigin({ req: reqWithUrlOnly })).toBe('https://192.168.1.100:3000');
-
-    // 4. From server-authoritative environment variables (highest priority)
+    // 4. Server-authoritative configuration wins over the origin option and request values
     process.env.APP_URL = 'https://app-url.example.com';
     expect(await resolveDynamicOrigin()).toBe('https://app-url.example.com');
-    // Even if req has a host header, server env variable wins for tamper-proof resolution
     expect(await resolveDynamicOrigin({ req: reqWithHost })).toBe('https://app-url.example.com');
+    expect(await resolveDynamicOrigin({ origin: 'https://custom-domain.org' })).toBe('https://app-url.example.com');
+
+    process.env.DAYWALKER_SIGNING_DOMAIN = 'sonalyze.daywalker.dev';
+    expect(await resolveDynamicOrigin()).toBe('https://sonalyze.daywalker.dev');
+    delete process.env.DAYWALKER_SIGNING_DOMAIN;
 
     delete process.env.APP_URL;
     process.env.NEXTAUTH_URL = 'https://nextauth.example.com';
     expect(await resolveDynamicOrigin()).toBe('https://nextauth.example.com');
+
+    // Internal config values are skipped in favor of the next public one
+    process.env.APP_URL = 'http://0.0.0.0:3000';
+    expect(await resolveDynamicOrigin()).toBe('https://nextauth.example.com');
+    delete process.env.APP_URL;
 
     delete process.env.NEXTAUTH_URL;
     process.env.VERCEL_URL = 'preview-branch.vercel.app';
@@ -199,6 +206,46 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
 
     delete process.env.VERCEL_URL;
     expect(await resolveDynamicOrigin()).toBe('http://localhost:3000');
+  });
+
+  it('never resolves internal or IP hosts as the public origin, from any source', async () => {
+    for (const key of ['DAYWALKER_SIGNING_DOMAIN', 'APP_URL', 'NEXTAUTH_URL', 'VERCEL_URL', 'SITE_URL', 'PUBLIC_URL']) {
+      delete process.env[key];
+    }
+    const internal = [
+      'http://0.0.0.0:3000',
+      'http://localhost:8080',
+      'http://app.localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://127.10.0.5',
+      'http://[::1]:3000',
+      'https://192.168.1.100:3000',
+      'https://10.0.0.7',
+      'http://[2001:db8::1]',
+      'http://web:3000',
+      'http://127.1:3000',
+      'http://0x7f.0.0.1',
+      'http://2130706433',
+    ];
+    for (const origin of internal) {
+      expect(await resolvePublicOrigin({ origin }), origin).toBeNull();
+      expect(await resolvePublicOrigin({ req: new Request(`${origin}/dashboard`) }), origin).toBeNull();
+      process.env.APP_URL = origin;
+      expect(await resolvePublicOrigin(), origin).toBeNull();
+      expect(getSigningDomain(origin), origin).toBeNull();
+      delete process.env.APP_URL;
+    }
+
+    expect(isPublicHostname('sonalyze.daywalker.dev')).toBe(true);
+    expect(isPublicHostname('sonalyze.daywalker.dev.')).toBe(true);
+    expect(isPublicHostname('0.0.0.0')).toBe(false);
+    expect(isPublicHostname('[::1]')).toBe(false);
+    expect(isPublicHostname('')).toBe(false);
+
+    // An IP or internal DAYWALKER_SIGNING_DOMAIN is ignored too
+    process.env.DAYWALKER_SIGNING_DOMAIN = '10.0.0.7';
+    expect(getSigningDomain(null)).toBeNull();
+    expect(await resolvePublicOrigin()).toBeNull();
   });
 
   it('sends token and serviceSlug in body and caller origin headers during validation according to API docs', async () => {
@@ -309,12 +356,18 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
       expect(verify(headers, body + ' ')).toBe(false);
     });
 
-    it('resolves the signing domain from env override or origin hostname, skipping local hosts', () => {
+    it('resolves the signing domain from env override or public origin hostname, never internal hosts', () => {
+      delete process.env.DAYWALKER_SIGNING_DOMAIN;
       expect(getSigningDomain('https://sonalyze.daywalker.dev:8443')).toBe('sonalyze.daywalker.dev');
       expect(getSigningDomain('http://localhost:3000')).toBeNull();
       expect(getSigningDomain('http://127.0.0.1:3000')).toBeNull();
+      expect(getSigningDomain('http://0.0.0.0:3000')).toBeNull();
+      expect(getSigningDomain(null)).toBeNull();
       process.env.DAYWALKER_SIGNING_DOMAIN = 'sonalyze.daywalker.dev';
       expect(getSigningDomain('http://localhost:3000')).toBe('sonalyze.daywalker.dev');
+      expect(getSigningDomain('https://other.example.com')).toBe('sonalyze.daywalker.dev');
+      process.env.DAYWALKER_SIGNING_DOMAIN = 'https://sonalyze.daywalker.dev/';
+      expect(getSigningDomain(null)).toBe('sonalyze.daywalker.dev');
     });
 
     it('signs the exact validate request body when a signing key is configured', async () => {
@@ -331,6 +384,156 @@ describe('Daywalker Auth Client (lib/daywalker-auth.ts)', () => {
       expect(captured!.url).toBe('https://auth.daywalker.dev/api/v1/tokens/validate');
       expect(captured!.headers['X-Daywalker-Domain']).toBe('sonalyze.daywalker.dev');
       expect(verify(captured!.headers, captured!.body)).toBe(true);
+    });
+
+    function captureValidateRequests() {
+      const calls: { headers: Record<string, string>; body: string }[] = [];
+      global.fetch = vi.fn().mockImplementation(async (_url, init) => {
+        calls.push({ headers: init.headers, body: init.body });
+        return { ok: true, status: 200, json: async () => ({ valid: true, serviceSlug: 'sonalyze' }) };
+      });
+      return calls;
+    }
+
+    function verifyAgainstJwks(headers: Record<string, string>, body: string) {
+      const [jwk] = getDaywalkerJwks().keys;
+      const jwksPublicKey = crypto.createPublicKey({ key: { kty: jwk.kty, crv: jwk.crv, x: jwk.x }, format: 'jwk' });
+      const payload = [
+        'daywalker-v1',
+        'POST',
+        '/api/v1/tokens/validate',
+        headers['X-Daywalker-Domain'],
+        headers['X-Daywalker-Timestamp'],
+        headers['X-Daywalker-Nonce'],
+        crypto.createHash('sha256').update(body).digest('hex'),
+      ].join('\n');
+      return crypto.verify(null, Buffer.from(payload), jwksPublicKey, Buffer.from(headers['X-Daywalker-Signature'], 'base64url'));
+    }
+
+    function clearOriginEnv() {
+      for (const key of ['DAYWALKER_SIGNING_DOMAIN', 'APP_URL', 'NEXTAUTH_URL', 'VERCEL_URL', 'SITE_URL', 'PUBLIC_URL']) {
+        delete process.env[key];
+      }
+    }
+
+    it('signs for the configured public domain even when given the container bind address', async () => {
+      clearOriginEnv();
+      process.env.DAYWALKER_API_KEY = 'srv_live_container';
+      process.env.DAYWALKER_SIGNING_KEY = pkcs8Der;
+      process.env.APP_URL = 'https://sonalyze.daywalker.dev';
+      const calls = captureValidateRequests();
+
+      const res = await validateServiceToken({ origin: 'http://0.0.0.0:3000', req: new Request('http://0.0.0.0:3000/dashboard') });
+      expect(res.valid).toBe(true);
+      const { headers, body } = calls[0];
+      expect(headers['X-Daywalker-Domain']).toBe('sonalyze.daywalker.dev');
+      expect(headers['Origin']).toBe('https://sonalyze.daywalker.dev');
+      expect(headers['Referer']).toBe('https://sonalyze.daywalker.dev');
+      expect(headers['X-Caller-Origin']).toBe('https://sonalyze.daywalker.dev');
+      expect(body).toBe(JSON.stringify({ token: 'srv_live_container', serviceSlug: 'sonalyze' }));
+      expect(verifyAgainstJwks(headers, body)).toBe(true);
+    });
+
+    it('prefers DAYWALKER_SIGNING_DOMAIN over APP_URL', async () => {
+      clearOriginEnv();
+      process.env.DAYWALKER_API_KEY = 'srv_live_precedence';
+      process.env.DAYWALKER_SIGNING_KEY = pkcs8Der;
+      process.env.APP_URL = 'https://sonalyze-abc12.ondigitalocean.app';
+      process.env.DAYWALKER_SIGNING_DOMAIN = 'sonalyze.daywalker.dev';
+      const calls = captureValidateRequests();
+
+      await validateServiceToken();
+      const { headers, body } = calls[0];
+      expect(headers['X-Daywalker-Domain']).toBe('sonalyze.daywalker.dev');
+      expect(headers['Origin']).toBe('https://sonalyze.daywalker.dev');
+      expect(verifyAgainstJwks(headers, body)).toBe(true);
+    });
+
+    it('sends neither signature nor hostname headers when only internal hosts are available', async () => {
+      clearOriginEnv();
+      process.env.DAYWALKER_API_KEY = 'srv_live_internal';
+      process.env.DAYWALKER_SIGNING_KEY = pkcs8Der;
+      const calls = captureValidateRequests();
+
+      const res = await validateServiceToken({
+        origin: 'http://0.0.0.0:3000',
+        req: new Request('http://0.0.0.0:3000/dashboard', { headers: { host: '0.0.0.0:3000' } }),
+      });
+      expect(res.valid).toBe(true);
+      const { headers } = calls[0];
+      expect(Object.keys(headers).filter((name) => name.toLowerCase().startsWith('x-daywalker-'))).toEqual([]);
+      expect(headers['Origin']).toBeUndefined();
+      expect(headers['Referer']).toBeUndefined();
+      expect(headers['X-Caller-Origin']).toBeUndefined();
+    });
+
+    it('warns once per process in production when signing key or domain is missing or invalid', async () => {
+      clearOriginEnv();
+      process.env.NODE_ENV = 'production';
+      process.env.DAYWALKER_API_KEY = 'srv_live_warn';
+      delete process.env.DAYWALKER_SIGNING_KEY;
+      captureValidateRequests();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await validateServiceToken({ forceRefresh: true });
+      await validateServiceToken({ forceRefresh: true });
+      const messages = warnSpy.mock.calls.map((call) => String(call[0]));
+      expect(messages.filter((m) => m.includes('DAYWALKER_SIGNING_KEY is not set'))).toHaveLength(1);
+      expect(messages.filter((m) => m.includes('No public signing domain resolved'))).toHaveLength(1);
+
+      clearServiceAuthCache();
+      warnSpy.mockClear();
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      process.env.DAYWALKER_SIGNING_KEY = 'not-a-valid-key';
+      process.env.APP_URL = 'https://sonalyze.daywalker.dev';
+      await validateServiceToken({ forceRefresh: true });
+      expect(warnSpy.mock.calls.map((call) => String(call[0]))).toEqual([
+        expect.stringContaining('DAYWALKER_SIGNING_KEY is invalid'),
+      ]);
+    });
+
+    it('stays quiet outside production and when fully configured', async () => {
+      clearOriginEnv();
+      process.env.DAYWALKER_API_KEY = 'srv_live_quiet';
+      captureValidateRequests();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      process.env.NODE_ENV = 'test';
+      delete process.env.DAYWALKER_SIGNING_KEY;
+      await validateServiceToken();
+
+      clearServiceAuthCache();
+      process.env.NODE_ENV = 'production';
+      process.env.DAYWALKER_SIGNING_KEY = pkcs8Der;
+      process.env.APP_URL = 'https://sonalyze.daywalker.dev';
+      await validateServiceToken();
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('logs Daywalker status and message on failure without leaking the token or key', async () => {
+      clearOriginEnv();
+      process.env.DAYWALKER_API_KEY = 'srv_live_secret_token_value';
+      process.env.DAYWALKER_SIGNING_KEY = pkcs8Der;
+      process.env.APP_URL = 'https://sonalyze.daywalker.dev';
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: async () => ({ error: 'Forbidden', message: "Caller not allowed for token srv_live_secret_token_value" }),
+      });
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      await validateServiceToken();
+      await validateServiceToken();
+      expect(errSpy).toHaveBeenCalledTimes(1);
+      const logged = String(errSpy.mock.calls[0][0]);
+      expect(logged).toContain('status=403');
+      expect(logged).toContain('Caller not allowed');
+      expect(logged).not.toContain('srv_live_secret_token_value');
+      expect(logged).not.toContain(pkcs8Der);
+
+      global.fetch = vi.fn().mockRejectedValue(new Error('ECONNRESET'));
+      await validateServiceToken();
+      expect(String(errSpy.mock.calls[1][0])).toContain('status=503');
     });
 
     it('serves the public JWKS at /.well-known/daywalker-keys.json', async () => {
