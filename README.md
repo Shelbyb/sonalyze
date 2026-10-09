@@ -112,8 +112,13 @@ NEXTAUTH_URL=https://localhost:3000
 | `NODE_ENV` | RUN_AND_BUILD_TIME | Application environment mode (`production` / `development`) |
 | `DAYWALKER_API_KEY` | RUN_AND_BUILD_TIME, secret | Daywalker service API token (`srv_live_...`, or `enc:v1:` encrypted) validated via `POST /api/v1/tokens/validate` |
 | `DAYWALKER_SERVICE_SLUG` | RUN_AND_BUILD_TIME | Daywalker service slug (default `sonalyze`) |
-| `DAYWALKER_SIGNING_KEY` | RUN_TIME, secret, optional | Ed25519 PKCS#8 key (`openssl genpkey -algorithm ed25519 -outform DER \| base64`) used to sign validate requests with `X-Daywalker-*` headers so domain allowlists work behind App Platform's edge. Public JWKS is served at `/.well-known/daywalker-keys.json` |
-| `DAYWALKER_SIGNING_DOMAIN` | RUN_TIME, optional | Domain the signature is issued for; must serve the JWKS (defaults to the app origin's hostname) |
+| `DAYWALKER_SIGNING_KEY` | RUN_TIME, secret | Ed25519 PKCS#8 key (`openssl genpkey -algorithm ed25519 -outform DER \| base64`; PEM and `enc:v1:` also accepted) that signs validate requests with `X-Daywalker-*` headers. This is how Daywalker proves our hostname for domain allowlist entries like `*.daywalker.dev`. Public JWKS is served at `/.well-known/daywalker-keys.json` |
+| `DAYWALKER_SIGNING_DOMAIN` | RUN_TIME | Public hostname the signature is issued for (`sonalyze.daywalker.dev`); must serve the JWKS. Takes precedence over `APP_URL` |
+| `APP_URL` | RUN_TIME | Public origin (`https://sonalyze.daywalker.dev`). Used for the signing domain and `Origin` / `Referer` / `X-Caller-Origin` when `DAYWALKER_SIGNING_DOMAIN` is unset |
+
+#### How Sonalyze identifies itself to Daywalker Auth
+
+The public origin is resolved from server-side config first: `DAYWALKER_SIGNING_DOMAIN` → `APP_URL` → `NEXTAUTH_URL` → `VERCEL_URL` → `SITE_URL` → `PUBLIC_URL`, then request-derived values. Internal and IP hosts (`0.0.0.0`, `localhost`, `127.x`, `::1`, bare IPs) are never used from any source. That matters because inside the App Platform container the request URL is the bind address `http://0.0.0.0:3000`. If no public origin resolves (local dev), validate requests go out unsigned and without hostname headers. In production, the runtime logs warn once if the signing key or domain is missing, and log Daywalker's status and message whenever validation fails.
 
 ---
 
@@ -171,6 +176,9 @@ The repository is pre-configured with `.do/app.yaml` and a hardened, multi-stage
    - `SPOTIFY_CLIENT_SECRET`: Your client secret (Encrypted Secret)
    - `NEXTAUTH_SECRET`: Random 48-byte cryptographic secret (Encrypted Secret, generate with `openssl rand -base64 48`)
    - `NEXTAUTH_URL`: `${APP_URL}`
+   - `DAYWALKER_API_KEY`: Daywalker service token (Encrypted Secret)
+   - `DAYWALKER_SIGNING_KEY`: Ed25519 signing key (Encrypted Secret)
+   - `DAYWALKER_SIGNING_DOMAIN`: `sonalyze.daywalker.dev`
    - `NODE_ENV`: `production`
 4. Register the live callback URL (`https://<your_domain>/api/auth/callback/spotify`) with the Spotify Developer Dashboard.
 
