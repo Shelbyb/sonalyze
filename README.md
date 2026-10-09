@@ -79,21 +79,35 @@ No central database is required. Sessions are stored securely in browser-encrypt
 
 ---
 
-## 🔑 2. Environment Variables
+## 🔑 2. Configure Environment Variables
 
-Create `.env.local` by copying `.env.local.example`:
+Copy the example environment configuration file:
 
 ```bash
 cp .env.local.example .env.local
 ```
 
-Set your credentials:
-```env
+Open `.env.local` and set your Spotify Developer API credentials and auth secrets:
+
+```bash
+# Spotify Developer API Credentials
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-NEXTAUTH_SECRET=your_32_byte_secret # Generate with: openssl rand -base64 32
+
+# Authentication Secret (generate in terminal with `openssl rand -base64 48`)
+NEXTAUTH_SECRET=your-secure-random-nextauth-secret-min-32-chars
 NEXTAUTH_URL=http://localhost:3000
 ```
+
+### Environment Variables Reference
+
+| Variable | Scope | Purpose |
+| :--- | :--- | :--- |
+| `SPOTIFY_CLIENT_ID` | RUN_AND_BUILD_TIME, secret | Spotify Developer Application Client ID |
+| `SPOTIFY_CLIENT_SECRET` | RUN_AND_BUILD_TIME, secret | Spotify Developer Application Client Secret |
+| `NEXTAUTH_SECRET` | RUN_AND_BUILD_TIME, secret | Cryptographic secret used to sign and encrypt JWT cookies (`openssl rand -base64 48`) |
+| `NEXTAUTH_URL` | RUN_AND_BUILD_TIME | Canonical authentication URL (`http://localhost:3000` locally, `${APP_URL}` in production) |
+| `NODE_ENV` | RUN_AND_BUILD_TIME | Application environment mode (`production` / `development`) |
 
 ---
 
@@ -126,19 +140,18 @@ npm run test:e2e
 
 ## ☁️ 5. DigitalOcean App Platform Deployment
 
-The repository is pre-configured with `.do/app.yaml` and a hardened, multi-stage `Dockerfile`.
+The repository is pre-configured with `.do/app.yaml` and a hardened, multi-stage `Dockerfile` (`output: "standalone"`).
 
-### Deploy via Control Panel
-1. Push this repository to your private GitHub repo (`Shelbyb/sonalyze`).
-2. In DigitalOcean, click **Apps** -> **Create App**.
-3. Select your GitHub repository (`Shelbyb/sonalyze`) and branch (`main`).
-4. Under **Environment Variables**, configure:
-   - `SPOTIFY_CLIENT_ID`: Your client ID (Encrypted)
-   - `SPOTIFY_CLIENT_SECRET`: Your client secret (Encrypted)
-   - `NEXTAUTH_SECRET`: Random 32+ character string (Encrypted)
+### Deploy via Control Panel or doctl CLI
+1. Push this repository to your GitHub repo (`Shelbyb/sonalyze`).
+2. DigitalOcean App Platform automatically builds the multi-stage Docker image and executes health checks against `/api/health` before routing live traffic.
+3. Under **Environment Variables**, configure:
+   - `SPOTIFY_CLIENT_ID`: Your client ID (Encrypted Secret)
+   - `SPOTIFY_CLIENT_SECRET`: Your client secret (Encrypted Secret)
+   - `NEXTAUTH_SECRET`: Random 48-byte cryptographic secret (Encrypted Secret, generate with `openssl rand -base64 48`)
    - `NEXTAUTH_URL`: `${APP_URL}`
    - `NODE_ENV`: `production`
-5. Deploy and register the live App URL with Spotify Developer Dashboard.
+4. Register the live callback URL (`https://sonalyze.daywalker.dev/api/auth/callback/spotify`) with the Spotify Developer Dashboard.
 
 ---
 

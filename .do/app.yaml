@@ -2,8 +2,6 @@ domains:
 - domain: sonalyze.daywalker.dev
   type: PRIMARY
   zone: daywalker.dev
-features:
-- buildpack-stack=ubuntu-22
 ingress:
   rules:
   - component:
@@ -14,8 +12,7 @@ ingress:
 name: sonalyze
 region: nyc
 services:
-- build_command: npm run build
-  environment_slug: node-js
+- dockerfile_path: Dockerfile
   envs:
   - key: SPOTIFY_CLIENT_ID
     scope: RUN_AND_BUILD_TIME
@@ -49,4 +46,4 @@ services:
   instance_count: 1
   instance_size_slug: basic-xxs
   name: web
-  run_command: npm start
+  source_dir: /
