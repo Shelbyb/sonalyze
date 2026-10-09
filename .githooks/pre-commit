@@ -1,54 +1,91 @@
 #!/usr/bin/env bash
 set -e
 
-# Pre-commit hook: Pull down the latest DigitalOcean App Platform spec to ensure sync before committing
+echo "🔍 [pre-commit] Running pre-commit validation checks..."
 
+# 1. Enforce Node.js and npm version requirements
+echo "📦 [pre-commit] Checking Node and npm environment..."
+NODE_VER=$(node -v 2>/dev/null | tr -d 'v')
+if [ -z "$NODE_VER" ]; then
+  echo "❌ [pre-commit] Error: Node.js is not found in PATH. Please install Node.js >=22.0.0."
+  exit 1
+fi
+
+NODE_MAJOR=$(echo "$NODE_VER" | cut -d'.' -f1)
+if [ "$NODE_MAJOR" -lt 22 ]; then
+  echo "❌ [pre-commit] Error: Node.js version $NODE_VER is not supported."
+  echo "   Required: Node.js >=22.0.0 (Current environment: v$NODE_VER)"
+  echo "   Please switch to Node 22+ using: nvm use / fnm use"
+  exit 1
+fi
+echo "   ✅ Node.js v$NODE_VER meets engine requirement (>=22.0.0)"
+
+NPM_VER=$(npm -v 2>/dev/null)
+if [ -z "$NPM_VER" ]; then
+  echo "❌ [pre-commit] Error: npm is not found in PATH."
+  exit 1
+fi
+
+NPM_MAJOR=$(echo "$NPM_VER" | cut -d'.' -f1)
+if [ "$NPM_MAJOR" -lt 10 ]; then
+  echo "❌ [pre-commit] Error: npm version $NPM_VER is not supported."
+  echo "   Required: npm >=10.0.0 (Current environment: $NPM_VER)"
+  exit 1
+fi
+echo "   ✅ npm v$NPM_VER meets engine requirement (>=10.0.0)"
+
+# 2. Enforce TypeScript Type Safety
+echo "🛡️  [pre-commit] Enforcing TypeScript typecheck..."
+if ! npm run typecheck; then
+  echo "❌ [pre-commit] TypeScript type checking failed! Please fix type errors before committing."
+  exit 1
+fi
+echo "   ✅ TypeScript compilation verified with 0 errors"
+
+# 3. Enforce ESLint Code Quality
+echo "🧹 [pre-commit] Enforcing ESLint rules..."
+if ! npm run lint; then
+  echo "❌ [pre-commit] ESLint verification failed! Please fix lint issues before committing."
+  exit 1
+fi
+echo "   ✅ ESLint verified with 0 issues"
+
+# 4. Pull down latest DigitalOcean App Platform spec to ensure sync before committing
 SPEC_FILE=".do/app.yaml"
 APP_NAME="sonalyze"
 
-echo "🔍 [pre-commit] Checking DigitalOcean App Platform configuration..."
+echo "☁️  [pre-commit] Checking DigitalOcean App Platform configuration..."
 
-# Check if doctl is installed
-if ! command -v doctl &> /dev/null; then
-  echo "⚠️  [pre-commit] doctl CLI not found in PATH. Skipping DigitalOcean spec pull."
-  exit 0
-fi
+if command -v doctl &> /dev/null && doctl account get &> /dev/null; then
+  APP_ID=$(doctl apps list --format ID,Spec.Name --no-header 2>/dev/null | awk -v name="$APP_NAME" '$2 == name {print $1; exit}')
+  if [ -z "$APP_ID" ]; then
+    APP_ID=$(doctl apps list -o json 2>/dev/null | grep -B 2 "\"name\": \"$APP_NAME\"" | grep -o '"id": "[^"]*"' | head -n 1 | cut -d'"' -f4)
+  fi
 
-# Check if doctl is authenticated
-if ! doctl account get &> /dev/null; then
-  echo "⚠️  [pre-commit] doctl not authenticated. Skipping DigitalOcean spec pull."
-  exit 0
-fi
-
-# Find App ID for the app
-APP_ID=$(doctl apps list --format ID,Spec.Name --no-header 2>/dev/null | awk -v name="$APP_NAME" '$2 == name {print $1; exit}')
-
-if [ -z "$APP_ID" ]; then
-  # Fallback: check if only one app or find by name in JSON format
-  APP_ID=$(doctl apps list -o json 2>/dev/null | grep -B 2 "\"name\": \"$APP_NAME\"" | grep -o '"id": "[^"]*"' | head -n 1 | cut -d'"' -f4)
-fi
-
-if [ -n "$APP_ID" ]; then
-  echo "⬇️  [pre-commit] Pulling latest DigitalOcean app spec for '$APP_NAME' ($APP_ID)..."
-  mkdir -p .do
-  TMP_SPEC=$(mktemp)
-  
-  if doctl apps spec get "$APP_ID" --format yaml > "$TMP_SPEC" 2>/dev/null && [ -s "$TMP_SPEC" ]; then
-    # Compare with existing file
-    if [ ! -f "$SPEC_FILE" ] || ! cmp -s "$TMP_SPEC" "$SPEC_FILE"; then
-      mv "$TMP_SPEC" "$SPEC_FILE"
-      echo "✅ [pre-commit] Updated $SPEC_FILE with latest remote DigitalOcean configuration."
-      git add "$SPEC_FILE"
+  if [ -n "$APP_ID" ]; then
+    echo "   ⬇️  Pulling latest DigitalOcean app spec for '$APP_NAME' ($APP_ID)..."
+    mkdir -p .do
+    TMP_SPEC=$(mktemp)
+    
+    if doctl apps spec get "$APP_ID" --format yaml > "$TMP_SPEC" 2>/dev/null && [ -s "$TMP_SPEC" ]; then
+      if [ ! -f "$SPEC_FILE" ] || ! cmp -s "$TMP_SPEC" "$SPEC_FILE"; then
+        mv "$TMP_SPEC" "$SPEC_FILE"
+        echo "   ✅ Updated $SPEC_FILE with latest remote DigitalOcean configuration."
+        git add "$SPEC_FILE"
+      else
+        echo "   ✅ $SPEC_FILE is already up to date with DigitalOcean."
+        rm -f "$TMP_SPEC"
+      fi
     else
-      echo "✅ [pre-commit] $SPEC_FILE is already up to date with DigitalOcean."
+      echo "   ⚠️  Could not fetch spec from DigitalOcean. Proceeding with existing local file."
       rm -f "$TMP_SPEC"
     fi
   else
-    echo "⚠️  [pre-commit] Failed to fetch spec for App ID $APP_ID. Proceeding with existing local file."
-    rm -f "$TMP_SPEC"
+    echo "   ℹ️  App '$APP_NAME' not found on DigitalOcean. Proceeding with existing local spec."
   fi
 else
-  echo "ℹ️  [pre-commit] App '$APP_NAME' not found on DigitalOcean. Proceeding with existing local spec."
+  echo "   ℹ️  doctl CLI not installed or unauthenticated. Skipping remote spec check."
 fi
 
+echo "✨ [pre-commit] All pre-commit checks passed successfully!"
 exit 0

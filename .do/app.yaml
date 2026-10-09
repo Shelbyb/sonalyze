@@ -17,15 +17,15 @@ services:
   - key: SPOTIFY_CLIENT_ID
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: EV[1:uJeDHKTAhrlI78QVodZywynG0trvdUz9:kyzqvehO4otXGqLjSt3l1A==]
+    value: EV[1:evbaYO5OdJpyNUtvubJpDwoJAU8BHNGG:97wAqqWF75lsg4XQwx5hc3Yr4Ko4xJTgP1ihOnZk1DRztZ11QXXFlhvJkEmjS8Gs]
   - key: SPOTIFY_CLIENT_SECRET
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: EV[1:LTDw8pifyTsR1/5PQnjujjl9czunF43x:1PuTnzBPRDKqC74fIUDBqw==]
+    value: EV[1:JHg2kku/YgRDbXYMtjB/x5NNGjdJZs82:syS04cRkl8lW3B31IAFcrO1kUno2hMP9vgHxjjIEpUINJjXs/orw6u0k7SvXVDmb]
   - key: NEXTAUTH_SECRET
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: EV[1:WuC0VLNEjuRByVElUxAuu19pYP0s45/T:YUCcVoHR8oP5po/EpCVuAA==]
+    value: EV[1:msfEYA6TL7JGfGjRm8pUii7dnU6dhsTA:G6bl4Pw2n1iZscCrh1rrEV0y5viySUv7eAckjdYnskgdFreJMUn4fGFstV35+ch7UdHiyc8Ot9aCb4JqLT32stHH9RHRqSShdsaCmgXUG5Q=]
   - key: NEXTAUTH_URL
     scope: RUN_AND_BUILD_TIME
     value: ${APP_URL}
