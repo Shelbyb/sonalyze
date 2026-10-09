@@ -16,6 +16,9 @@ import { AudioPlayerProvider, useAudioPlayer } from '@/components/AudioPlayerCon
 import GlobalPlayer from '@/components/GlobalPlayer';
 import PlaylistsPage from '@/app/dashboard/playlists/page';
 import DiscoverPage from '@/app/dashboard/discover/page';
+import LandingPage from '@/app/page';
+import LandingHeroPreview from '@/components/LandingHeroPreview';
+import LandingFaq from '@/components/LandingFaq';
 import * as spotifyLib from '@/lib/spotify';
 import { signIn, signOut } from 'next-auth/react';
 import type { SpotifyTrack, SpotifyPlaylist } from '@/types/spotify';
@@ -272,5 +275,56 @@ describe('Extra Components and Edge Cases', () => {
 
     expect(screen.getByText('Corrupted Playlist')).toBeInTheDocument();
     expect(screen.getByText('Valid Playlist (15 tracks)')).toBeInTheDocument();
+  });
+
+  it('renders LandingHeroPreview and toggles between telemetry tabs', () => {
+    render(<LandingHeroPreview />);
+
+    // Default radar tab
+    expect(screen.getByText('Multi-Dimensional DNA')).toBeInTheDocument();
+    expect(screen.getByText('Dance (88%)')).toBeInTheDocument();
+
+    // Switch to Player tab
+    fireEvent.click(screen.getByRole('button', { name: 'Player' }));
+    expect(screen.getByText('30s Streaming Audio Preview')).toBeInTheDocument();
+    expect(screen.getByText('Solaris Pulse (Extended Mix)')).toBeInTheDocument();
+
+    // Switch to Archetype tab
+    fireEvent.click(screen.getByRole('button', { name: 'Archetype' }));
+    expect(screen.getByText('High-Octane Party Catalyst')).toBeInTheDocument();
+    expect(screen.getByText('Sonic Archetype Classification')).toBeInTheDocument();
+  });
+
+  it('renders LandingFaq and expands/collapses questions', () => {
+    render(<LandingFaq />);
+
+    // First FAQ is open by default
+    expect(screen.getByText(/Sonalyze connects directly via official Spotify OAuth/i)).toBeInTheDocument();
+
+    // Click on another FAQ
+    const secondFaqBtn = screen.getByRole('button', { name: /Is my Spotify password or listening history stored on your servers\?/i });
+    fireEvent.click(secondFaqBtn);
+    expect(screen.getByText(/Sonalyze operates with a 100% stateless architecture/i)).toBeInTheDocument();
+
+    // Collapse it
+    fireEvent.click(secondFaqBtn);
+    expect(screen.queryByText(/Sonalyze operates with a 100% stateless architecture/i)).not.toBeInTheDocument();
+  });
+
+  it('renders complete redesigned LandingPage structure', () => {
+    render(<LandingPage />);
+
+    // Check header & hero
+    expect(screen.getAllByText('Sonalyze').length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/See the shape of your sound/i);
+
+    // Check feature sections
+    expect(screen.getByRole('heading', { name: 'Top tracks & previews' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Audio DNA' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Taste profile' })).toBeInTheDocument();
+
+    // Check Archetypes & Security
+    expect(screen.getByText('High-Octane Party Catalyst')).toBeInTheDocument();
+    expect(screen.getByText('100% Stateless Sessions')).toBeInTheDocument();
   });
 });
