@@ -13,6 +13,7 @@ export interface TokenValidationResponse {
   };
   error?: string;
   message?: string;
+  allowedOrigins?: string[];
 }
 
 export interface ServiceAuthResult {
@@ -35,17 +36,23 @@ export class ServiceAuthError extends Error {
   }
 }
 
+export interface ValidateServiceTokenOptions {
+  forceRefresh?: boolean;
+  origin?: string;
+  req?: any;
+}
+
 interface CacheEntry {
   result: ServiceAuthResult;
   expiresAt: number;
 }
 
-let authCache: CacheEntry | null = null;
+const authCache = new Map<string, CacheEntry>();
 export const CACHE_TTL_MS = 60_000; // 60s cache for valid tokens
 export const REQUEST_TIMEOUT_MS = 5_000;
 
 export function clearServiceAuthCache(): void {
-  authCache = null;
+  authCache.clear();
 }
 
 export function getResolvedServiceApiKey(): string | null {
@@ -81,18 +88,119 @@ export function getDaywalkerServiceSlug(): string {
   );
 }
 
-export async function validateServiceToken(options?: {
-  forceRefresh?: boolean;
-}): Promise<ServiceAuthResult> {
-  // During Next.js static prerendering build phase, bypass external network check
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
-    return { valid: true, status: 200 };
+function cleanOrigin(raw: string): string {
+  let trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+    const isLocal =
+      trimmed.includes("localhost") ||
+      trimmed.startsWith("127.0.0.1") ||
+      trimmed.startsWith("0.0.0.0");
+    const proto = isLocal ? "http" : "https";
+    trimmed = `${proto}://${trimmed}`;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.origin;
+  } catch {
+    return trimmed.replace(/\/+$/, "");
+  }
+}
+
+function extractOriginFromHeaders(headers: {
+  get(name: string): string | null | undefined;
+}): string | null {
+  // SECURITY: Never read client-controlled headers like 'x-caller-origin', 'x-origin',
+  // 'origin', or 'referer' from incoming HTTP requests. External callers can forge those headers
+  // to fake a whitelisted origin. We only resolve from server-bound destination host and protocol.
+  const forwardedHost = headers.get("x-forwarded-host");
+  const host = forwardedHost || headers.get("host");
+  if (host && host.trim()) {
+    const cleanHost = host.split(",")[0].trim();
+    // Validate host format (domain, IP, and optional port) to prevent injection
+    if (!/^[a-zA-Z0-9.-]+(:\d+)?$/.test(cleanHost)) {
+      return null;
+    }
+    const forwardedProto = headers.get("x-forwarded-proto");
+    const isLocal =
+      cleanHost.includes("localhost") ||
+      cleanHost.startsWith("127.0.0.1") ||
+      cleanHost.startsWith("0.0.0.0");
+    const proto =
+      forwardedProto?.split(",")[0].trim() ||
+      (isLocal ? "http" : "https");
+    return cleanOrigin(`${proto}://${cleanHost}`);
   }
 
-  const now = Date.now();
+  return null;
+}
 
-  if (!options?.forceRefresh && authCache && authCache.expiresAt > now && authCache.result.valid) {
-    return authCache.result;
+export async function resolveDynamicOrigin(input?: {
+  origin?: string;
+  req?: any;
+}): Promise<string> {
+  // 1. Explicit verified origin parameter
+  if (input?.origin && typeof input.origin === "string" && input.origin.trim().length > 0) {
+    return cleanOrigin(input.origin);
+  }
+
+  // 2. Server-authoritative environment variables (highest trust, tamper-proof from clients)
+  const envUrl =
+    process.env.APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
+    process.env.SITE_URL ||
+    process.env.PUBLIC_URL ||
+    "";
+
+  if (envUrl.trim()) {
+    return cleanOrigin(envUrl.trim());
+  }
+
+  // 3. Extract from server-side request context
+  if (input?.req) {
+    const req = input.req;
+    if (req.headers && typeof req.headers.get === "function") {
+      const fromHeaders = extractOriginFromHeaders(req.headers);
+      if (fromHeaders) return fromHeaders;
+    }
+    if (req.nextUrl && req.nextUrl.origin && req.nextUrl.origin !== "null") {
+      return cleanOrigin(req.nextUrl.origin);
+    }
+    if (typeof req.url === "string" && req.url.trim()) {
+      try {
+        const parsed = new URL(req.url);
+        if (parsed.origin && parsed.origin !== "null") {
+          return parsed.origin;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  // 4. Attempt to read from Next.js server headers (in App Router server components / route handlers)
+  try {
+    const { headers } = await import("next/headers");
+    const headerList = await headers();
+    if (headerList && typeof headerList.get === "function") {
+      const fromHeaders = extractOriginFromHeaders(headerList);
+      if (fromHeaders) return fromHeaders;
+    }
+  } catch {
+    // Expected outside of active request context
+  }
+
+  // 5. Default local fallback
+  return "http://localhost:3000";
+}
+
+export async function validateServiceToken(
+  options?: ValidateServiceTokenOptions
+): Promise<ServiceAuthResult> {
+  // During Next.js static prerendering build phase, bypass external network check
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return { valid: true, status: 200 };
   }
 
   const token = getResolvedServiceApiKey();
@@ -103,8 +211,23 @@ export async function validateServiceToken(options?: {
       error: "Unauthorized",
       message: "Missing Daywalker API Key. Please configure DAYWALKER_API_KEY in your environment.",
     };
-    authCache = null;
     return failure;
+  }
+
+  const resolvedOrigin = await resolveDynamicOrigin(options);
+  const cacheKey = `${token}:${resolvedOrigin}`;
+  const now = Date.now();
+  const cached = authCache.get(cacheKey);
+
+  if (!options?.forceRefresh && cached && cached.expiresAt > now && cached.result.valid) {
+    return cached.result;
+  }
+
+  let hostOnly: string;
+  try {
+    hostOnly = new URL(resolvedOrigin).host;
+  } catch {
+    hostOnly = resolvedOrigin.replace(/^https?:\/\//, "").split("/")[0];
   }
 
   const authUrl = getDaywalkerAuthUrl();
@@ -120,10 +243,19 @@ export async function validateServiceToken(options?: {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        Origin: resolvedOrigin,
+        Referer: resolvedOrigin,
+        "X-Caller-Origin": resolvedOrigin,
+        "X-Origin": resolvedOrigin,
+        "X-Forwarded-Host": hostOnly,
       },
       body: JSON.stringify({
         token,
         serviceSlug,
+        origin: resolvedOrigin,
+        callerOrigin: resolvedOrigin,
+        domain: hostOnly,
+        host: hostOnly,
       }),
       signal: controller.signal,
     });
@@ -138,10 +270,10 @@ export async function validateServiceToken(options?: {
         status: response.status,
         data,
       };
-      authCache = {
+      authCache.set(cacheKey, {
         result: success,
         expiresAt: now + CACHE_TTL_MS,
-      };
+      });
       return success;
     }
 
@@ -157,10 +289,10 @@ export async function validateServiceToken(options?: {
       data,
     };
 
-    authCache = null;
+    authCache.delete(cacheKey);
     return failure;
   } catch (error) {
-    authCache = null;
+    authCache.delete(cacheKey);
     const isAbort = error instanceof Error && error.name === "AbortError";
     return {
       valid: false,
@@ -175,11 +307,13 @@ export async function validateServiceToken(options?: {
   }
 }
 
-export async function requireServiceAuth(): Promise<void> {
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
+export async function requireServiceAuth(
+  options?: ValidateServiceTokenOptions
+): Promise<void> {
+  if (process.env.NEXT_PHASE === "phase-production-build") {
     return;
   }
-  const result = await validateServiceToken();
+  const result = await validateServiceToken(options);
   if (!result.valid) {
     throw new ServiceAuthError(
       result.message || "Service authorization check failed.",

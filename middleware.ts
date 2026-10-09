@@ -23,8 +23,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Validate token against Daywalker Auth
-  const authResult = await validateServiceToken();
+  // 2. Validate token against Daywalker Auth using dynamic request origin
+  const dynamicOrigin = request.nextUrl.origin;
+  const authResult = await validateServiceToken({
+    req: request,
+    origin: dynamicOrigin,
+  });
 
   // 3. Handle service error page route
   if (pathname === "/service-error") {
