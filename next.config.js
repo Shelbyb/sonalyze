@@ -43,6 +43,10 @@ const nextConfig = {
             value: 'strict-origin-when-cross-origin',
           },
           {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://i.scdn.co https://mosaic.scdn.co https://image-cdn-ak.spotifycdn.com https://image-cdn-fa.spotifycdn.com https://seed-mix-image.spotifycdn.com https://platform-lookaside.fbsbx.com; media-src 'self' https://p.scdn.co https://*.scdn.co blob:; connect-src 'self' https://api.spotify.com https://accounts.spotify.com; font-src 'self' data:; frame-ancestors 'none';",
+          },
+          {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), browsing-topics=()',
           },
