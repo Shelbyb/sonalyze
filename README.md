@@ -112,7 +112,7 @@ No central database is required. Sessions are stored securely in browser-encrypt
 
 ## 🔑 3. Configure Environment Variables
 
-Copy [`.env.local.example`](./.env.local.example) to `.env.local` for local development. In production, variables are set on the DigitalOcean app (see [`.do/app.yaml`](./.do/app.yaml)):
+Copy [`.env.local.example`](./.env.local.example) to `.env.local` for local development. In production, variables are set on the DigitalOcean app dashboard:
 
 ```bash
 cp .env.local.example .env.local
@@ -228,7 +228,7 @@ npm run test:e2e
 
 ## ☁️ 7. DigitalOcean App Platform Deployment
 
-The repository is pre-configured with `.do/app.yaml` and a hardened, multi-stage `Dockerfile` (`output: "standalone"`).
+The repository is configured with a hardened, multi-stage `Dockerfile` (`output: "standalone"`).
 
 ### Deploy via Control Panel or doctl CLI
 1. Push this repository to your GitHub repo (`<username>/<repository_name>`).

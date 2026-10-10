@@ -1,7 +1,6 @@
 import {
   Daywalker,
   createDaywalker,
-  daywalker as defaultDaywalker,
   DaywalkerError,
   DaywalkerAuthError,
   DaywalkerRateLimitError,

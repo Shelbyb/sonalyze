@@ -48,5 +48,7 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
-# Vercel & DigitalOcean local caches
+# Vercel & DigitalOcean local caches and specs
 .vercel
+.do/
+.do

@@ -79,7 +79,6 @@ if command -v doctl &> /dev/null && doctl account get &> /dev/null; then
       if [ ! -f "$SPEC_FILE" ] || ! cmp -s "$TMP_SPEC" "$SPEC_FILE"; then
         mv "$TMP_SPEC" "$SPEC_FILE"
         echo "   ✅ Updated $SPEC_FILE with latest remote DigitalOcean configuration."
-        git add "$SPEC_FILE"
       else
         echo "   ✅ $SPEC_FILE is already up to date with DigitalOcean."
         rm -f "$TMP_SPEC"
