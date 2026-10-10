@@ -7,7 +7,6 @@ import type {
   SpotifyUser,
   TimeRange,
 } from '@/types/spotify';
-import { requireServiceAuth } from '@/lib/daywalker-auth';
 
 const BASE = 'https://api.spotify.com/v1';
 
@@ -39,7 +38,6 @@ async function spotifyFetch<T>(
   init?: RequestInit,
   ttlMs = 3 * 60 * 1000 // Default 3 min TTL for GET requests
 ): Promise<T> {
-  await requireServiceAuth();
   const method = init?.method?.toUpperCase() ?? 'GET';
   const isGet = method === 'GET';
   const cacheKey = `${token.slice(-10)}:${path}`;
