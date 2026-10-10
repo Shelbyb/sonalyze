@@ -1,4 +1,9 @@
+<p align="center">
+  <img src="public/brand/logo-192.png" alt="Sonalyze Logo" width="128" height="128" />
+</p>
+
 # Sonalyze — Audio Intelligence & Spotify Listening Visualizer
+
 
 <p align="center">
   <img src="https://img.shields.io/badge/Node.js-%3E%3D22.0.0-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js >=22" />
@@ -9,7 +14,7 @@
   <img src="https://img.shields.io/badge/Tailwind_CSS-v4.3-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/Test_Coverage-88%25-1ed760?style=for-the-badge&logo=vitest&logoColor=black" alt="88% Coverage" />
   <img src="https://img.shields.io/badge/E2E_Tests-Playwright-2EAD33?style=for-the-badge&logo=playwright&logoColor=white" alt="Playwright E2E" />
-  <img src="https://img.shields.io/badge/Security-0_Vulnerabilities-success?style=for-the-badge&logo=shield" alt="Security" />
+  <img src="https://img.shields.io/badge/Security-Hardened-orange?style=for-the-badge&logo=shield" alt="Security Hardened" />
   <img src="https://img.shields.io/badge/DigitalOcean-App_Platform-0080FF?style=for-the-badge&logo=digitalocean&logoColor=white" alt="DigitalOcean" />
   <img src="https://img.shields.io/badge/Demo-sonalyze.daywalker.dev-purple?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Live Demo" />
 </p>
@@ -22,6 +27,22 @@ No central database is required. Sessions are stored securely in browser-encrypt
 
 ---
 
+## 📚 Table of Contents / Glossary
+
+- [Tech Stack Carousel](#-tech-stack-carousel)
+- [Key Features & Performance Optimizations](#-key-features--performance-optimizations)
+- [Live Production Demo & Domain](#-live-production-demo--domain)
+- [1. Spotify Developer Setup](#-1-spotify-developer-setup)
+- [2. Daywalker Account & API Key](#-2-daywalker-account--api-key)
+- [3. Configure Environment Variables](#-3-configure-environment-variables)
+- [4. Daywalker Service Authorization](#-4-daywalker-service-authorization)
+- [5. Local Development](#-5-local-development)
+- [6. Testing & Quality Assurance](#-6-testing--quality-assurance)
+- [7. DigitalOcean App Platform Deployment](#-7-digitalocean-app-platform-deployment)
+- [8. Security & Hardening Safeguards](#-8-security--hardening-safeguards)
+
+---
+
 ## 🎛️ Tech Stack Carousel
 
 ```
@@ -30,8 +51,8 @@ No central database is required. Sessions are stored securely in browser-encrypt
 ├───────────────┬─────────────────┬────────────────┬───────────────────┬─────────────────┤
 │   Framework   │     Styling     │ Authentication │   Visualization   │     Testing     │
 ├───────────────┼─────────────────┼────────────────┼───────────────────┼─────────────────┤
-│  Next.js 16   │ Tailwind CSS v4 │  NextAuth.js   │     Recharts      │  Vitest (87%+)  │
-│  (Turbopack)  │    + PostCSS    │  (JWT Cookies) │  (Radar / Bar)    │ Playwright E2E  │
+│  Next.js 16   │ Tailwind CSS v4 │ NextAuth.js +  │     Recharts      │  Vitest (88%+)  │
+│  (Turbopack)  │    + PostCSS    │ Daywalker Auth │  (Radar / Bar)    │ Playwright E2E  │
 └───────────────┴─────────────────┴────────────────┴───────────────────┴─────────────────┘
 ```
 
@@ -39,10 +60,11 @@ No central database is required. Sessions are stored securely in browser-encrypt
 | :--- | :--- |
 | **Next.js 16** | App Router, Turbopack compilation, standalone container output, and route streaming. |
 | **Tailwind CSS v4** | Modern CSS theme engine with GPU-accelerated micro-animations and responsive grid. |
+| **Daywalker Auth** | Cryptographic service authorization, RFC 9421 HTTP Message Signatures, and perimeter middleware. |
 | **NextAuth.js** | Stateless Spotify OAuth 2.0 provider with automatic token refreshing and HTTP-only JWTs. |
 | **Recharts** | Interactive vector radar charts and bar charts for audio DNA and genre distribution. |
 | **Lucide React** | Streamlined SVG icon system for UI controls and music indicators. |
-| **Vitest & Playwright**| 87%+ line test coverage across all components and API utilities, plus cross-browser E2E testing. |
+| **Vitest & Playwright**| 88%+ line test coverage across all components and API utilities, plus cross-browser E2E testing. |
 | **Docker & DigitalOcean**| Multi-stage Alpine container running as unprivileged `nextjs:nodejs` user. |
 
 ---
@@ -59,13 +81,12 @@ No central database is required. Sessions are stored securely in browser-encrypt
 
 ---
 
-## 🌐 Live Production Demo & Domain
+## 🌐 Live Production Demo
 
 - **Live Production URL**: [https://sonalyze.daywalker.dev](https://sonalyze.daywalker.dev)
-- **Subdomain**: `sonalyze.daywalker.dev` (DigitalOcean App Platform)
-- **Spotify OAuth Callback**: `https://sonalyze.daywalker.dev/api/auth/callback/spotify`
+- **Subdomain**: `sonalyze.daywalker.dev`
 - **Container Health Check Endpoints**:
-  - `/api/health` — JSON status payload with uptime, timestamp, and HTTP 200 response
+  - `/api/health` — JSON status payload with service authorization, uptime, timestamp, and HTTP 200 response
   - `/healthz` — Lightweight liveness/readiness probe compliant with DigitalOcean and Kubernetes standards
 
 ---
@@ -81,9 +102,17 @@ No central database is required. Sessions are stored securely in browser-encrypt
 
 ---
 
-## 🔑 2. Configure Environment Variables
+## 🛡️ 2. Daywalker Account & API Key
 
-Copy the example environment configuration file:
+1. Create a free account at [Daywalker Dev](https://auth.daywalker.dev/signup?service=sonalyze).
+2. Generate an **API Key** (`DAYWALKER_API_KEY`) from the dashboard for Sonalyze service authorization.
+3. Keep this key secure for your local and production environments.
+
+---
+
+## 🔑 3. Configure Environment Variables
+
+Copy [`.env.local.example`](./.env.local.example) to `.env.local` for local development. In production, variables are set on the DigitalOcean app (see [`.do/app.yaml`](./.do/app.yaml)):
 
 ```bash
 cp .env.local.example .env.local
@@ -99,30 +128,63 @@ SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 # Authentication Secret (generate in terminal with `openssl rand -base64 48`)
 NEXTAUTH_SECRET=your-secure-random-nextauth-secret-min-32-chars
 NEXTAUTH_URL=https://localhost:3000
+
+# Daywalker Service Authorization (Free: https://auth.daywalker.dev/signup?service=sonalyze)
+DAYWALKER_API_KEY=your_daywalker_api_key
+APP_URL=https://<your_domain_url>
 ```
 
 ### Environment Variables Reference
 
-| Variable | Scope | Purpose |
-| :--- | :--- | :--- |
-| `SPOTIFY_CLIENT_ID` | RUN_AND_BUILD_TIME, secret | Spotify Developer Application Client ID |
-| `SPOTIFY_CLIENT_SECRET` | RUN_AND_BUILD_TIME, secret | Spotify Developer Application Client Secret |
-| `NEXTAUTH_SECRET` | RUN_AND_BUILD_TIME, secret | Cryptographic secret used to sign and encrypt JWT cookies (`openssl rand -base64 48`) |
-| `NEXTAUTH_URL` | RUN_AND_BUILD_TIME | Canonical authentication URL (`https://localhost:3000` locally, `${APP_URL}` in production) |
-| `NODE_ENV` | RUN_AND_BUILD_TIME | Application environment mode (`production` / `development`) |
-| `DAYWALKER_API_KEY` | RUN_AND_BUILD_TIME, secret | Daywalker service API token (`srv_live_...`, or `enc:v1:` encrypted) validated via `POST /api/v1/tokens/validate` |
-| `DAYWALKER_SERVICE_SLUG` | RUN_AND_BUILD_TIME | Daywalker service slug (default `sonalyze`) |
-| `DAYWALKER_SIGNING_KEY` | RUN_TIME, secret | Ed25519 PKCS#8 key (`openssl genpkey -algorithm ed25519 -outform DER \| base64`; PEM and `enc:v1:` also accepted) that signs validate requests with `X-Daywalker-*` headers. This is how Daywalker proves our hostname for domain allowlist entries like `*.daywalker.dev`. Public JWKS is served at `/.well-known/daywalker-keys.json` |
-| `DAYWALKER_SIGNING_DOMAIN` | RUN_TIME | Public hostname the signature is issued for (`sonalyze.daywalker.dev`); must serve the JWKS. Takes precedence over `APP_URL` |
-| `APP_URL` | RUN_TIME | Public origin (`https://sonalyze.daywalker.dev`). Used for the signing domain and `Origin` / `Referer` / `X-Caller-Origin` when `DAYWALKER_SIGNING_DOMAIN` is unset |
+| Variable | Required | Scope | Details |
+|---|---|---|---|
+| `SPOTIFY_CLIENT_ID` | ✅ Yes | `RUN_AND_BUILD_TIME` | 🔒 **Secret.** Spotify Developer Application Client ID. |
+| `SPOTIFY_CLIENT_SECRET` | ✅ Yes | `RUN_AND_BUILD_TIME` | 🔒 **Secret.** Spotify Developer Application Client Secret. |
+| `NEXTAUTH_SECRET` | ✅ Yes | `RUN_AND_BUILD_TIME` | 🔒 **Secret.** Cryptographic secret used to sign and encrypt JWT cookies (`openssl rand -base64 48`). Rotating it invalidates existing sessions. |
+| `NEXTAUTH_URL` | ✅ Yes | `RUN_AND_BUILD_TIME` | Canonical authentication URL (`https://localhost:3000` locally, `${APP_URL}` in production). |
+| `DAYWALKER_API_KEY` | ✅ Yes | `RUN_AND_BUILD_TIME` | 🔒 **Secret.** Daywalker service API token (`srv_live_...`, or `enc:v1:` encrypted). |
+| `DAYWALKER_SIGNING_KEY` | ⚠️ Recommended | `RUN_TIME` | 🔒 **Secret.** Ed25519 PKCS#8 key used to sign outbound validate requests with RFC 9421 / RFC 9530 HTTP Message Signatures. |
+| `DAYWALKER_KEY_ID` | ➖ Optional | `RUN_TIME` | RFC 7638 JWK thumbprint or key identifier registered in Daywalker Auth. |
+| `DAYWALKER_SIGNING_DOMAIN` | ➖ Optional | `RUN_TIME` | Public hostname the signature is issued for (`sonalyze.daywalker.dev`). Takes precedence over `APP_URL`. |
+| `DAYWALKER_PUBLIC_KEY` | ➖ Optional | `RUN_TIME` | Optional Daywalker public key / JWK for zero-egress offline JWT token lease verification. |
+| `APP_URL` | ➖ Optional | `RUN_TIME` | Public origin (`https://sonalyze.daywalker.dev`). Used for the signing domain when `DAYWALKER_SIGNING_DOMAIN` is unset. |
+| `NODE_ENV` | ➖ Optional | `RUN_AND_BUILD_TIME` | Application environment mode (`production` / `development`). |
 
-#### How Sonalyze identifies itself to Daywalker Auth
+**Legend**
 
-The public origin is resolved from server-side config first: `DAYWALKER_SIGNING_DOMAIN` → `APP_URL` → `NEXTAUTH_URL` → `VERCEL_URL` → `SITE_URL` → `PUBLIC_URL`, then request-derived values. Internal and IP hosts (`0.0.0.0`, `localhost`, `127.x`, `::1`, bare IPs) are never used from any source. That matters because inside the App Platform container the request URL is the bind address `http://0.0.0.0:3000`. If no public origin resolves (local dev), validate requests go out unsigned and without hostname headers. In production, the runtime logs warn once if the signing key or domain is missing, and log Daywalker's status and message whenever validation fails.
+- **Required:** ✅ the app won't start or work correctly without it · ⚠️ works without it, but a feature is degraded or disabled · ➖ has a sensible default.
+- **Scope** ([App Platform docs](https://docs.digitalocean.com/products/app-platform/how-to/use-environment-variables/)):
+  - `RUN_TIME` — available only while the app is running. Use for server-only values and secrets.
+  - `BUILD_TIME` — available only during `next build`.
+  - `RUN_AND_BUILD_TIME` — available in both. **Required for every `NEXT_PUBLIC_*` variable**, because Next.js inlines them into the client bundle at build time. Each must also be declared as an `ARG` in the `Dockerfile` builder stage.
+- 🔒 **Secret** — set with `type: SECRET` in the app spec. App Platform encrypts it, and the value is never shown again.
+
+> [!WARNING]
+> Never prefix a secret with `NEXT_PUBLIC_` — anything with that prefix is shipped to the browser.
 
 ---
 
-## 💻 3. Local Development
+## 🛡️ 4. Daywalker Service Authorization
+
+Sonalyze enforces cryptographic service authorization directly across its runtime perimeter:
+
+1. **Perimeter Middleware (`middleware.ts`)**:
+   - Blocks automated scanning attacks probing for Next.js Server Action vulnerabilities (CVE-2025-55182).
+   - Validates service authorization for incoming requests and seamlessly routes unauthorized web users to a diagnostic `/service-error` screen with self-healing recovery.
+   - Responds with structured RFC 7807/JSON 401/429 errors for API endpoints.
+   - Bypasses static assets and probe endpoints (`/api/health`, `/healthz`, `/favicon.ico`, `/robots.txt`).
+
+2. **Cryptographic Request Signing (RFC 9421 / RFC 9530)**:
+   - Outbound validation requests from Sonalyze to `auth.daywalker.dev` are signed using Ed25519 keys via WebCrypto.
+   - Uses standard `Signature-Input`, `Signature`, and `Content-Digest` headers to prove hostname identity without DNS reverse-lookup bottlenecks.
+
+3. **Multi-Layer Service Guard**:
+   - `requireServiceAuth()` guards Spotify API fetches, session resolution, and NextAuth callbacks.
+   - Automatic token caching (60s TTL) with exponential backoff and jitter on rate limits.
+
+---
+
+## 💻 5. Local Development
 
 ### System Requirements
 - **Node.js**: `>=22.0.0` (Active LTS / v24 recommended, managed via `.nvmrc` / `.node-version`)
@@ -145,7 +207,7 @@ Open [https://localhost:3000](https://localhost:3000) in your browser.
 
 ---
 
-## 🧪 4. Testing & Quality Assurance
+## 🧪 6. Testing & Quality Assurance
 
 ### Run Full Quality & Type Validation:
 ```bash
@@ -164,7 +226,7 @@ npm run test:e2e
 
 ---
 
-## ☁️ 5. DigitalOcean App Platform Deployment
+## ☁️ 7. DigitalOcean App Platform Deployment
 
 The repository is pre-configured with `.do/app.yaml` and a hardened, multi-stage `Dockerfile` (`output: "standalone"`).
 
@@ -184,7 +246,7 @@ The repository is pre-configured with `.do/app.yaml` and a hardened, multi-stage
 
 ---
 
-## 🔒 6. Security & Hardening Safeguards
+## 🔒 8. Security & Hardening Safeguards
 
 - **Stateless Cookies**: Zero server-side session persistence.
 - **Strict Content Security & Headers**:

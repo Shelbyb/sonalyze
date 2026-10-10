@@ -23,7 +23,7 @@ vi.mock('next/navigation', () => ({
   }),
   usePathname: () => '/dashboard',
   useParams: () => ({ id: 'test-track-123' }),
-  useSearchParams: () => new URLSearchParams('error=Unauthorized&status=401'),
+  useSearchParams: () => new URLSearchParams(typeof window !== 'undefined' && window.location.search ? window.location.search : 'error=Unauthorized&status=401'),
 }));
 
 // Mock next-auth/react

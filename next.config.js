@@ -1,8 +1,14 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
+  serverExternalPackages: ['@shelbyb/daywalker-sdk'],
+  turbopack: {
+    root: path.resolve(__dirname, '..'),
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'i.scdn.co' },
