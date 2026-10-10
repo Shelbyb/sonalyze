@@ -40,6 +40,7 @@ No central database is required. Sessions are stored securely in browser-encrypt
 - [6. Testing & Quality Assurance](#-6-testing--quality-assurance)
 - [7. DigitalOcean App Platform Deployment](#-7-digitalocean-app-platform-deployment)
 - [8. Security & Hardening Safeguards](#-8-security--hardening-safeguards)
+- [9. Troubleshooting](#-9-troubleshooting)
 
 ---
 
@@ -257,3 +258,27 @@ The repository is configured with a hardened, multi-stage `Dockerfile` (`output:
   - `Permissions-Policy` (disables camera, microphone, geolocation)
 - **Zero Production Vulnerabilities**: `npm audit --omit=dev` verified with 0 vulnerabilities.
 - **Unprivileged Container**: Runs on Alpine Linux as non-root `nextjs:nodejs` user.
+
+---
+
+## 🩺 9. Troubleshooting
+
+### "No active key '<key id>' is registered for this service"
+
+**Problem**
+
+Loading the site redirected to `/service-error` with the message `No active key '<key id>' is registered for this service`. The app was signing its authorization requests with a key pair (`DAYWALKER_KEY_ID` + `DAYWALKER_SIGNING_KEY`) whose public half was not registered, or was no longer active, with Daywalker Auth for the `sonalyze` service. This can happen when a key was generated locally but never registered, or when it was replaced or revoked by a later registration.
+
+**Fix**
+
+1. Make sure `DAYWALKER_API_KEY` is set in `.env.local`. Registration needs it, and without it the key cannot be registered.
+2. Run the registration command from the project root:
+   ```bash
+   npx daywalker init --domain sonalyze.daywalker.dev --service sonalyze
+   ```
+   It reuses the key pair already in `.env.local` and registers its public key with Daywalker Auth.
+3. Confirm that `DAYWALKER_KEY_ID` and `DAYWALKER_SIGNING_KEY` in the deployed environment come from the same key pair as `.env.local`. If they differ, copy both values from one run into the DigitalOcean app as secrets and redeploy.
+4. Reload the site. It should load normally with no redirect to `/service-error`.
+
+> [!NOTE]
+> Always set `DAYWALKER_KEY_ID` and `DAYWALKER_SIGNING_KEY` together from the same run. Running `init` with a new key replaces the previously active key.
