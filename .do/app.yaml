@@ -35,7 +35,7 @@ services:
   - key: DAYWALKER_API_KEY
     scope: RUN_AND_BUILD_TIME
     type: SECRET
-    value: EV[1:vsYTS6HmQgrfV3ov8fU918tc0UP4FTYa:Y9zb+3KyfgCsdpCEK5/ayQIZf7zOi17+q0B7eXRqxkGLdqxp2BsIWyLWEQaS3mAokjwp9gHsf97u3EHqk/MoJ1Uhtr7pxYWOmRa+r1nsvu8oAc57aAJvEkw=]
+    value: EV[1:CfKAhI7uTxyQxg7hQ/c3RHmEk59vc4s6:mKzW1Rok62MpKz5SqSmFxcExRRTIMX6VpGSwKCciga3vfSGsN9f6I7N8DBZzuhmN+wBoCLJp6Tvyc8cnRnHTphgNAntR6Cr0Yk6w9dNRFGHhKoRVKCpLv7A=]
   - key: DAYWALKER_SIGNING_KEY
     scope: RUN_TIME
     type: SECRET
