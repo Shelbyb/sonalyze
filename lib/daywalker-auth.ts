@@ -107,12 +107,7 @@ export function getDaywalkerServiceSlug(): string {
 }
 
 export function getSigningDomain(): string | null {
-  return (
-    process.env.DAYWALKER_SIGNING_DOMAIN ||
-    process.env.DAYWALKER_DOMAIN ||
-    process.env.APP_URL ||
-    null
-  );
+  return process.env.APP_URL || null;
 }
 
 let activeClient: Daywalker | null = null;

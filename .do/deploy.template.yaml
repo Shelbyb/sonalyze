@@ -42,12 +42,14 @@ spec:
           type: SECRET
         - key: DAYWALKER_KEY_ID
           scope: RUN_TIME
-        - key: DAYWALKER_SIGNING_DOMAIN
-          value: ${APP_DOMAIN}
+        - key: APP_URL
+          value: ${APP_URL}
           scope: RUN_TIME
+        # Shared Last.fm API key (not a secret). Replace with your own key for isolated quota.
         - key: LASTFM_API_KEY
           value: 973d6d3639d70a5915e4d9ad5525bdf8
-          scope: RUN_TIME
+          scope: RUN_AND_BUILD_TIME
+        # Shared Last.fm API key (not a secret), same value as LASTFM_API_KEY.
         - key: NEXT_PUBLIC_LASTFM_API_KEY
           value: 973d6d3639d70a5915e4d9ad5525bdf8
           scope: RUN_AND_BUILD_TIME

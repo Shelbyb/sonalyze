@@ -28,6 +28,7 @@ No database is required. By default Sonalyze runs in **browser storage mode**, w
 
 ## 📚 Table of Contents / Glossary
 
+- [One-Click Deploy](#-one-click-deploy)
 - [Tech Stack Carousel](#-tech-stack-carousel)
 - [Key Features & Performance Optimizations](#-key-features--performance-optimizations)
 - [Spotify Extended Access & Last.fm Hybridization Architecture](#-spotify-extended-access--lastfm-hybridization-architecture)
@@ -44,6 +45,20 @@ No database is required. By default Sonalyze runs in **browser storage mode**, w
 - [9. Security & Hardening Safeguards](#-9-security--hardening-safeguards)
 - [10. Troubleshooting](#-10-troubleshooting)
 - [Docker & Compose](#-docker--compose)
+
+---
+
+## ⚡ One-Click Deploy
+
+<p align="center">
+  <a href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/Shelbyb/sonalyze/tree/main"><img src="https://www.deploytodo.com/do-btn-blue.svg" alt="Deploy to DigitalOcean" /></a>
+  <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FShelbyb%2Fsonalyze&amp;project-name=sonalyze&amp;repository-name=sonalyze&amp;env=SPOTIFY_CLIENT_ID,SPOTIFY_CLIENT_SECRET,NEXTAUTH_SECRET,NEXTAUTH_URL,APP_URL,DAYWALKER_API_KEY,DAYWALKER_SIGNING_KEY,DAYWALKER_KEY_ID&amp;envDescription=Spotify%20app%20credentials%2C%20a%20random%20NextAuth%20secret%2C%20and%20your%20registered%20Daywalker%20key%20pair&amp;envLink=https%3A%2F%2Fgithub.com%2FShelbyb%2Fsonalyze%23-4-configure-environment-variables"><img src="https://vercel.com/button" alt="Deploy with Vercel" /></a>
+</p>
+
+Before deploying you need the Spotify credentials (section 1), a Last.fm API key if desired (section 2), a Daywalker API key (section 3), and a registered signing key pair from `DAYWALKER_SIGNING_KEY` + `DAYWALKER_KEY_ID` (section 5). Fill in the secrets when prompted, then add the app's callback URL (`https://<your_app_domain>/api/auth/callback/spotify`) in the Spotify Developer Dashboard.
+
+- **DigitalOcean** uses [`.do/deploy.template.yaml`](./.do/deploy.template.yaml) and the `Dockerfile`. Fork the repo and edit `repo:` in the template to deploy your own copy.
+- **Vercel** uses [`vercel.json`](./vercel.json) (`npm ci`, then `npm run build`, which runs the Daywalker integrity check). After the first deploy, add `LASTFM_API_KEY` and `NEXT_PUBLIC_LASTFM_API_KEY` (plain values; the key is shared, not secret) if you want your own Last.fm quota. Set `NEXTAUTH_URL` and `APP_URL` to your production URL, and register the signing key for that domain. Vercel has no container entrypoint, so run `node scripts/migrate.mjs` yourself if you enable Postgres.
 
 ---
 
@@ -195,13 +210,12 @@ APP_URL=https://<your_domain_url>
 | `NEXTAUTH_SECRET`            | ✅ Yes         | `RUN_TIME`           | 🔒 **Secret.** Cryptographic secret used to sign and encrypt JWT cookies (`openssl rand -base64 48`). Rotating it invalidates existing sessions.             |
 | `NEXTAUTH_URL`               | ✅ Yes         | `RUN_AND_BUILD_TIME` | Canonical authentication URL (`https://localhost:3000` locally, `${APP_URL}` in production).                                                                 |
 | `DAYWALKER_API_KEY`          | ✅ Yes         | `RUN_TIME`           | 🔒 **Secret.** Daywalker service API token (`srv_live_...`, or `enc:v1:` encrypted).                                                                         |
-| `LASTFM_API_KEY`             | ➖ Optional    | `RUN_TIME`           | 🔒 **Secret.** Dedicated Last.fm API Key for music discovery and recommendation fallback (defaults to built-in shared key).                                  |
-| `NEXT_PUBLIC_LASTFM_API_KEY` | ➖ Optional    | `RUN_AND_BUILD_TIME` | Public Last.fm API Key for client-side discovery requests (defaults to built-in shared key).                                                                 |
+| `LASTFM_API_KEY`             | ➖ Optional    | `RUN_AND_BUILD_TIME` | Shared (non-secret) API key. Dedicated Last.fm API Key for music discovery and recommendation fallback (defaults to built-in shared key).                    |
+| `NEXT_PUBLIC_LASTFM_API_KEY` | ➖ Optional    | `RUN_AND_BUILD_TIME` | Shared (non-secret) Last.fm API key for client-side requests (defaults to built-in shared key). Inlined into the client bundle at build time.                |
 | `DAYWALKER_SIGNING_KEY`      | ⚠️ Recommended | `RUN_TIME`           | 🔒 **Secret.** Ed25519 PKCS#8 key used to sign outbound validate requests with RFC 9421 / RFC 9530 HTTP Message Signatures.                                  |
 | `DAYWALKER_KEY_ID`           | ➖ Optional    | `RUN_TIME`           | RFC 7638 JWK thumbprint or key identifier registered in Daywalker Auth.                                                                                      |
-| `DAYWALKER_SIGNING_DOMAIN`   | ➖ Optional    | `RUN_TIME`           | Public hostname the signature is issued for (`sonalyze.daywalker.dev`). Takes precedence over `APP_URL`.                                                     |
 | `DAYWALKER_PUBLIC_KEY`       | ➖ Optional    | `RUN_TIME`           | Optional Daywalker public key / JWK for zero-egress offline JWT token lease verification.                                                                    |
-| `APP_URL`                    | ➖ Optional    | `RUN_TIME`           | Public origin (`https://sonalyze.daywalker.dev`). Used for the signing domain when `DAYWALKER_SIGNING_DOMAIN` is unset.                                      |
+| `APP_URL`                    | ➖ Optional    | `RUN_TIME`           | Public origin (`https://sonalyze.daywalker.dev`). Used as the signing domain.                                                                                |
 | `STORAGE_MODE`               | ➖ Optional    | `RUN_TIME`           | `browser` (default) or `postgres`. When unset, Postgres is used automatically if `DATABASE_URL` is set.                                                      |
 | `DATABASE_URL`               | ➖ Optional    | `RUN_TIME`           | 🔒 **Secret.** Postgres connection string (`postgres://user:pass@host:5432/db`). Enables database storage.                                                   |
 | `DATABASE_READ_URL`          | ➖ Optional    | `RUN_TIME`           | 🔒 **Secret.** Read-only replica connection string. History and tag reads use it; writes always use `DATABASE_URL`. Falls back to `DATABASE_URL` when unset. |
@@ -361,12 +375,6 @@ npm run test:e2e
 
 The repository is configured with a hardened, multi-stage `Dockerfile` (`output: "standalone"`).
 
-### One-Click Deploy
-
-[![Deploy to DigitalOcean](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/Shelbyb/sonalyze/tree/main)
-
-The button uses [`.do/deploy.template.yaml`](./.do/deploy.template.yaml). Before deploying you need the Spotify credentials (section 1), a Last.fm API key if desired (section 2), a Daywalker API key (section 3), and a registered signing key pair from `DAYWALKER_SIGNING_KEY` + `DAYWALKER_KEY_ID` (section 5). Fill in the secrets when prompted, then add the app's callback URL (`https://<your_app_domain>/api/auth/callback/spotify`) in the Spotify Developer Dashboard. Fork the repo and edit `repo:` in the template to deploy your own copy.
-
 ### Deploy via Control Panel or doctl CLI
 
 1. Push this repository to your GitHub repo (`<username>/<repository_name>`).
@@ -378,7 +386,7 @@ The button uses [`.do/deploy.template.yaml`](./.do/deploy.template.yaml). Before
    - `NEXTAUTH_URL`: `${APP_URL}`
    - `DAYWALKER_API_KEY`: Daywalker service token (Encrypted Secret)
    - `DAYWALKER_SIGNING_KEY`: Ed25519 signing key (Encrypted Secret)
-   - `DAYWALKER_SIGNING_DOMAIN`: `sonalyze.daywalker.dev`
+   - `APP_URL`: `https://sonalyze.daywalker.dev`
    - `NODE_ENV`: `production`
 4. Register the live callback URL (`https://<your_domain>/api/auth/callback/spotify`) with the Spotify Developer Dashboard.
 

@@ -99,8 +99,8 @@ describe('Daywalker Auth SDK Integration (lib/daywalker-auth.ts)', () => {
     expect(getDaywalkerServiceSlug()).toBe('sonalyze');
     expect(getSigningDomain()).toBeNull();
 
-    process.env.DAYWALKER_SIGNING_DOMAIN = 'sonalyze.daywalker.dev';
-    expect(getSigningDomain()).toBe('sonalyze.daywalker.dev');
+    process.env.APP_URL = 'https://sonalyze.daywalker.dev';
+    expect(getSigningDomain()).toBe('https://sonalyze.daywalker.dev');
   });
 
   it('decrypts encrypted API keys seamlessly in configuration resolution', () => {

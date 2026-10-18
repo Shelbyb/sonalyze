@@ -28,10 +28,7 @@ const client = createDaywalker({
   apiKey: process.env.DAYWALKER_API_KEY || process.env.DAYWALKER_SERVICE_TOKEN,
   signingKey: process.env.DAYWALKER_SIGNING_KEY,
   serviceSlug,
-  domain:
-    process.env.DAYWALKER_SIGNING_DOMAIN ||
-    process.env.DAYWALKER_DOMAIN ||
-    process.env.APP_URL,
+  domain: process.env.APP_URL,
   authUrl: process.env.DAYWALKER_AUTH_URL || 'https://auth.daywalker.dev',
 });
 
