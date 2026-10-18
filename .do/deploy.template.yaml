@@ -26,16 +26,16 @@ spec:
           value: ${APP_URL}
           scope: RUN_AND_BUILD_TIME
         - key: NEXTAUTH_SECRET
-          scope: RUN_AND_BUILD_TIME
+          scope: RUN_TIME
           type: SECRET
         - key: SPOTIFY_CLIENT_ID
-          scope: RUN_AND_BUILD_TIME
+          scope: RUN_TIME
           type: SECRET
         - key: SPOTIFY_CLIENT_SECRET
-          scope: RUN_AND_BUILD_TIME
+          scope: RUN_TIME
           type: SECRET
         - key: DAYWALKER_API_KEY
-          scope: RUN_AND_BUILD_TIME
+          scope: RUN_TIME
           type: SECRET
         - key: DAYWALKER_SIGNING_KEY
           scope: RUN_TIME
