@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "dev:secure": "next dev --experimental-https",
+    "prebuild": "node scripts/check-daywalker.mjs",
     "build": "next build",
+    "prestart": "node scripts/check-daywalker.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -23,7 +25,7 @@
   },
   "packageManager": "npm@11.17.0",
   "dependencies": {
-    "@shelbyb/daywalker-sdk": "^0.4.1",
+    "@shelbyb/daywalker-sdk": "0.9.1",
     "@tailwindcss/postcss": "^4.3.3",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.4",

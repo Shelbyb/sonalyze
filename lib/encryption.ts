@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { getCachedRuntimeSecret } from '@/lib/daywalker-auth';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12; // 96 bits recommended for GCM
@@ -15,12 +16,25 @@ export function deriveKey(secret: string): Buffer {
 }
 
 export function getMasterSecret(): string {
-  return (
+  const baseSecret =
     process.env.ENCRYPTION_KEY ||
     process.env.DAYWALKER_ENCRYPTION_KEY ||
     process.env.NEXTAUTH_SECRET ||
-    'sonalyze-fallback-encryption-secret-default-key-32-chars-minimum'
-  );
+    'sonalyze-fallback-encryption-secret-default-key-32-chars-minimum';
+
+  const runtimeSecret = getCachedRuntimeSecret();
+  if (runtimeSecret) {
+    const derived = crypto.hkdfSync(
+      'sha256',
+      baseSecret,
+      Buffer.from(runtimeSecret, 'utf-8'),
+      Buffer.from('sonalyze-runtime-secret-wrapper', 'utf-8'),
+      32
+    );
+    return Buffer.from(derived).toString('hex');
+  }
+
+  return baseSecret;
 }
 
 export function getFallbackSecrets(): string[] {
@@ -28,11 +42,13 @@ export function getFallbackSecrets(): string[] {
   const fallbacks: string[] = [];
 
   const candidates = [
+    process.env.ENCRYPTION_KEY,
     process.env.OLD_ENCRYPTION_KEY,
     process.env.PREVIOUS_ENCRYPTION_KEY,
     process.env.NEXTAUTH_SECRET,
     process.env.DAYWALKER_ENCRYPTION_KEY,
     process.env.BETTER_AUTH_SECRET,
+    'sonalyze-fallback-encryption-secret-default-key-32-chars-minimum',
   ];
 
   for (const cand of candidates) {

@@ -22,7 +22,7 @@ RUN mkdir -p /app/public
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN npm run build
+RUN node scripts/check-daywalker.mjs && npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner

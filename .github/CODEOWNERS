@@ -1,0 +1,19 @@
+# CODEOWNERS for Sonalyze Repository
+# Mandatory protection for licensing, SDK configuration, security guards, and CI/CD policies.
+
+package.json @Shelbyb
+package-lock.json @Shelbyb
+scripts/ @Shelbyb
+middleware.ts @Shelbyb
+app/api/health/route.ts @Shelbyb
+app/healthz/route.ts @Shelbyb
+lib/db/client.ts @Shelbyb
+lib/daywalker-auth.ts @Shelbyb
+lib/integrity.test.ts @Shelbyb
+__tests__/integrity.test.ts @Shelbyb
+Dockerfile @Shelbyb
+.github/ @Shelbyb
+AGENTS.md @Shelbyb
+CLAUDE.md @Shelbyb
+SDK.md @Shelbyb
+.junie/ @Shelbyb

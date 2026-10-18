@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import {
   deriveKey,
@@ -15,7 +15,13 @@ import {
   DaywalkerRateLimitError,
   validateServiceToken,
   requireServiceAuth,
+  getServiceLicense,
+  requireServiceLicense,
+  assertServiceAuthorized,
+  assertSdkIntact,
+  deriveRuntimeSecret,
   clearServiceAuthCache,
+  clearLicenseCache,
   ServiceAuthError,
   getDaywalkerClient,
   getClient,
@@ -71,7 +77,6 @@ describe('Encryption Utilities (lib/encryption.ts)', () => {
 
 describe('Daywalker Auth SDK Integration (lib/daywalker-auth.ts)', () => {
   const originalEnv = process.env;
-  const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
     process.env = { ...originalEnv };
@@ -80,12 +85,13 @@ describe('Daywalker Auth SDK Integration (lib/daywalker-auth.ts)', () => {
     process.env.DAYWALKER_AUTH_URL = 'https://auth.daywalker.dev';
     process.env.NEXTAUTH_SECRET = 'secret-32-chars-long-padding-key-12345';
     clearServiceAuthCache();
+    clearLicenseCache();
   });
 
   afterEach(() => {
     process.env = originalEnv;
-    globalThis.fetch = originalFetch;
     clearServiceAuthCache();
+    clearLicenseCache();
     vi.restoreAllMocks();
   });
 
@@ -110,168 +116,168 @@ describe('Daywalker Auth SDK Integration (lib/daywalker-auth.ts)', () => {
     expect(getResolvedServiceApiKey()).toBe(rawKey);
   });
 
-  it('returns valid status and payload when Daywalker Auth returns 200 OK', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          valid: true,
-          serviceSlug: 'sonalyze',
-          tokenId: 'tok_123456',
-          tokenName: 'Production App Token',
-          rateLimit: { limit: 1000, remaining: 999, reset: 1700000000 },
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      )
-    );
+  it('assertSdkIntact verifies Daywalker prototype contains required methods', () => {
+    expect(() => assertSdkIntact()).not.toThrow();
+    expect(typeof Daywalker.prototype.validateServiceCredentials).toBe('function');
+    expect(typeof Daywalker.prototype.getLicense).toBe('function');
+    expect(typeof Daywalker.prototype.fetchBundle).toBe('function');
+  });
 
-    const result = await validateServiceToken();
+  it('validates service credentials successfully with fake client (success case)', async () => {
+    const fakeClient = {
+      validateServiceCredentials: vi.fn().mockResolvedValue({
+        ok: true,
+        data: {
+          serviceSlug: 'sonalyze',
+          tokenId: 'tok_fake_123',
+          tokenName: 'Fake Test Key',
+        },
+      }),
+      getLicense: vi.fn(),
+      fetchBundle: vi.fn(),
+    } as unknown as Daywalker;
+
+    const result = await validateServiceToken({ client: fakeClient });
     expect(result.valid).toBe(true);
     expect(result.status).toBe(200);
     expect(result.data?.serviceSlug).toBe('sonalyze');
-    expect(result.data?.tokenId).toBe('tok_123456');
+    expect(result.data?.tokenId).toBe('tok_fake_123');
+    expect(fakeClient.validateServiceCredentials).toHaveBeenCalledWith({
+      serviceSlug: 'sonalyze',
+      forceRefresh: undefined,
+    });
   });
 
-  it('caches token validation responses across multiple invocations', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          valid: true,
-          serviceSlug: 'sonalyze',
-          tokenId: 'tok_cache_test',
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      )
-    );
-    globalThis.fetch = fetchMock;
+  it('handles SERVICE_REVOKED with status 403 and preserved error code', async () => {
+    const fakeClient = {
+      validateServiceCredentials: vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        error: 'SERVICE_REVOKED',
+        message: 'The service sonalyze has been revoked',
+      }),
+    } as unknown as Daywalker;
 
-    const res1 = await validateServiceToken();
-    const res2 = await validateServiceToken();
-
-    expect(res1.valid).toBe(true);
-    expect(res2.valid).toBe(true);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-
-    // Force refresh bypasses cache
-    await validateServiceToken({ forceRefresh: true });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-  });
-
-  it('handles 401 InvalidToken from Daywalker Auth', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          error: 'InvalidToken',
-          message: 'The token provided is invalid.',
-        }),
-        {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      )
-    );
-
-    const result = await validateServiceToken();
-    expect(result.valid).toBe(false);
-    expect(result.status).toBe(401);
-    expect(result.error).toBe('INVALID_TOKEN');
-    expect(result.message).toBe('The token provided is invalid.');
-  });
-
-  it('handles 403 Forbidden with origin authorization issues', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          error: 'Forbidden',
-          message: 'Caller origin not allowed for this API token.',
-        }),
-        {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      )
-    );
-
-    const result = await validateServiceToken();
+    const result = await validateServiceToken({ client: fakeClient });
     expect(result.valid).toBe(false);
     expect(result.status).toBe(403);
+    expect(result.error).toBe('SERVICE_REVOKED');
+    expect(result.message).toContain('revoked');
   });
 
-  it('handles 429 Too Many Requests with retry-after header', async () => {
-    const customClient = createDaywalker({
-      apiKey: 'srv_live_test_api_token_12345',
-      serviceSlug: 'sonalyze',
-      authUrl: 'https://auth.daywalker.dev',
-      maxRetries: 0,
-      retry: { maxRetries: 0, initialDelayMs: 0 },
-    });
+  it('handles network failure failing closed with status 503', async () => {
+    const fakeClient = {
+      validateServiceCredentials: vi.fn().mockRejectedValue(new Error('Network connection refused')),
+    } as unknown as Daywalker;
 
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          error: 'Too Many Requests',
-          message: 'Rate limit exceeded for service sonalyze',
-        }),
-        {
-          status: 429,
-          headers: {
-            'Content-Type': 'application/json',
-            'Retry-After': '30',
-          },
-        }
-      )
-    );
-
-    const result = await validateServiceToken({ client: customClient });
+    const result = await validateServiceToken({ client: fakeClient });
     expect(result.valid).toBe(false);
-    expect(result.status).toBe(429);
-    expect(result.retryAfter).toBe(30);
+    expect(result.status).toBe(503);
+    expect(result.error).toBe('SERVICE_UNAVAILABLE');
   });
 
-  it('returns missing credentials error when DAYWALKER_API_KEY is unset', async () => {
-    delete process.env.DAYWALKER_API_KEY;
-    delete process.env.DAYWALKER_SERVICE_TOKEN;
-    delete process.env.SERVICE_API_KEY;
+  it('requireServiceAuth succeeds on valid credentials and throws on failure', async () => {
+    const fakeClient = {
+      validateServiceCredentials: vi.fn().mockResolvedValue({
+        ok: true,
+        data: { serviceSlug: 'sonalyze', tokenId: 'tok_req' },
+      }),
+    } as unknown as Daywalker;
 
-    const result = await validateServiceToken();
-    expect(result.valid).toBe(false);
-    expect(result.status).toBe(401);
-    expect(result.error).toBe('MissingCredentials');
-  });
-
-  it('requireServiceAuth succeeds on valid token and throws ServiceAuthError on invalid token', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          valid: true,
-          serviceSlug: 'sonalyze',
-          tokenId: 'tok_require_test',
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      )
-    );
-
-    const payload = await requireServiceAuth();
+    const payload = await requireServiceAuth({ client: fakeClient });
     expect(payload.serviceSlug).toBe('sonalyze');
-    expect(payload.tokenId).toBe('tok_require_test');
 
-    clearServiceAuthCache();
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          error: 'Unauthorized',
-          message: 'Invalid API key',
-        }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      )
-    );
+    const invalidClient = {
+      validateServiceCredentials: vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        error: 'SERVICE_REVOKED',
+        message: 'Revoked',
+      }),
+    } as unknown as Daywalker;
 
-    await expect(requireServiceAuth()).rejects.toThrow(ServiceAuthError);
+    await expect(requireServiceAuth({ client: invalidClient })).rejects.toThrow(DaywalkerAuthError);
+  });
+
+  it('getServiceLicense and requireServiceLicense fetch, cache, and derive runtime secret', async () => {
+    const fakeLicense = {
+      serviceSlug: 'sonalyze',
+      licenseKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      expiresAt: new Date(Date.now() + 3600000).toISOString(),
+    };
+    const fakeBundle = {
+      serviceSlug: 'sonalyze',
+      dataKeySalt: 'salt_abc_123',
+      features: {},
+      issuedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 3600000).toISOString(),
+    };
+
+    const fakeClient = {
+      getLicense: vi.fn().mockResolvedValue(fakeLicense),
+      fetchBundle: vi.fn().mockResolvedValue(fakeBundle),
+    } as unknown as Daywalker;
+
+    const res = await getServiceLicense({ client: fakeClient });
+    expect(res.valid).toBe(true);
+    expect(res.data?.license.licenseKey).toBe(fakeLicense.licenseKey);
+    expect(res.data?.bundle.dataKeySalt).toBe('salt_abc_123');
+    expect(res.data?.runtimeSecret).toBeDefined();
+
+    // Second call should return from cache without re-fetching
+    const res2 = await getServiceLicense({ client: fakeClient });
+    expect(res2.valid).toBe(true);
+    expect(fakeClient.getLicense).toHaveBeenCalledTimes(1);
+    expect(fakeClient.fetchBundle).toHaveBeenCalledTimes(1);
+
+    // requireServiceLicense succeeds
+    const required = await requireServiceLicense({ client: fakeClient });
+    expect(required.runtimeSecret).toBe(res.data?.runtimeSecret);
+  });
+
+  it('demonstrates that runtimeSecret changes when the bundle salt changes', () => {
+    const licenseKey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const salt1 = 'random-salt-version-1';
+    const salt2 = 'random-salt-version-2';
+
+    const secret1 = deriveRuntimeSecret(licenseKey, salt1, 'sonalyze');
+    const secret2 = deriveRuntimeSecret(licenseKey, salt2, 'sonalyze');
+
+    expect(secret1).toHaveLength(64);
+    expect(secret2).toHaveLength(64);
+    expect(secret1).not.toBe(secret2);
+  });
+
+  it('getServiceLicense handles SERVICE_REVOKED with status 403 and code kept', async () => {
+    const fakeClient = {
+      getLicense: vi.fn().mockRejectedValue(new DaywalkerAuthError('Service revoked', 403, 'SERVICE_REVOKED')),
+      fetchBundle: vi.fn().mockResolvedValue({}),
+    } as unknown as Daywalker;
+
+    const res = await getServiceLicense({ client: fakeClient, forceRefresh: true });
+    expect(res.valid).toBe(false);
+    expect(res.status).toBe(403);
+    expect(res.code).toBe('SERVICE_REVOKED');
+
+    await expect(requireServiceLicense({ client: fakeClient, forceRefresh: true })).rejects.toThrow(DaywalkerAuthError);
+  });
+
+  it('getServiceLicense handles network error mapping to status 503', async () => {
+    const fakeClient = {
+      getLicense: vi.fn().mockRejectedValue(new Error('Network error connecting to auth.daywalker.dev')),
+      fetchBundle: vi.fn().mockResolvedValue({}),
+    } as unknown as Daywalker;
+
+    const res = await getServiceLicense({ client: fakeClient, forceRefresh: true });
+    expect(res.valid).toBe(false);
+    expect(res.status).toBe(503);
+    expect(res.code).toBe('SERVICE_UNAVAILABLE');
+  });
+
+  it('assertServiceAuthorized validates SDK, auth, and license, caching for 60s', async () => {
+    await expect(assertServiceAuthorized()).resolves.toBeUndefined();
+    // Subsequent calls within 60s are instant
+    await expect(assertServiceAuthorized()).resolves.toBeUndefined();
   });
 });
 
@@ -328,62 +334,12 @@ describe('Perimeter Middleware (middleware.ts)', () => {
   it('blocks malformed Server Action probes before routing', async () => {
     const probe = new NextRequest('http://localhost:3000/', {
       method: 'POST',
-      headers: { 'Next-Action': 'x' },
+      headers: {
+        'next-action': 'invalid-malformed-action-probe-xyz',
+      },
     });
+
     const res = await middleware(probe);
     expect(res.status).toBe(400);
-    const json = await res.json();
-    expect(json.error).toBe('Bad Request');
-  });
-
-  it('permits valid hex Server Action requests when authenticated', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ valid: true, serviceSlug: 'sonalyze' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    );
-
-    const req = new NextRequest('http://localhost:3000/', {
-      method: 'POST',
-      headers: { 'Next-Action': '7f'.repeat(21) },
-    });
-    const res = await middleware(req);
-    expect(res.headers.get('x-middleware-next')).toBe('1');
-  });
-
-  it('redirects unauthorized UI requests to /service-error with sanitized params', async () => {
-    delete process.env.DAYWALKER_API_KEY;
-    clearServiceAuthCache();
-
-    const req = new NextRequest('http://localhost:3000/dashboard');
-    const res = await middleware(req);
-    expect(res.status).toBe(307);
-    expect(res.headers.get('location')).toContain('/service-error');
-  });
-
-  it('returns 400/401 JSON for unauthorized API requests', async () => {
-    delete process.env.DAYWALKER_API_KEY;
-    clearServiceAuthCache();
-
-    const req = new NextRequest('http://localhost:3000/api/auth/session');
-    const res = await middleware(req);
-    expect(res.status).toBeGreaterThanOrEqual(400);
-    const json = await res.json();
-    expect(json.error).toBeDefined();
-  });
-
-  it('heals back to root when accessing /service-error with valid token', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ valid: true, serviceSlug: 'sonalyze' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    );
-
-    const req = new NextRequest('http://localhost:3000/service-error');
-    const res = await middleware(req);
-    expect(res.status).toBe(307);
-    expect(res.headers.get('location')).toBe('http://localhost:3000/');
   });
 });

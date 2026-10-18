@@ -2,11 +2,13 @@ import {
   createDaywalkerServiceHealthMiddleware,
   STATIC_FILE_EXTENSIONS,
 } from '@shelbyb/daywalker-sdk/next';
-import { getClient, getDaywalkerServiceSlug } from '@/lib/daywalker-auth';
+import { getClient, getDaywalkerServiceSlug, validateServiceToken } from '@/lib/daywalker-auth';
 
 export const runtime = 'nodejs';
 
-export const middleware = (request: any) => {
+export const middleware = async (request: any) => {
+  await validateServiceToken({ req: request });
+
   const handler = createDaywalkerServiceHealthMiddleware({
     client: getClient(),
     serviceSlug: getDaywalkerServiceSlug(),
