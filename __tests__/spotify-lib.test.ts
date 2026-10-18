@@ -13,6 +13,9 @@ import {
   getTopTracks,
   getRecentlyPlayed,
   getTrack,
+  getSeveralTracks,
+  searchTracks,
+  searchTrack,
   getAudioFeatures,
   getSeveralAudioFeatures,
   getUserPlaylists,
@@ -236,5 +239,153 @@ describe('Spotify API Client & Cache Layer', () => {
 
     const singleFeatures = await getAudioFeatures('token', 'track999');
     expect(singleFeatures.tempo).toBe(120);
+  });
+
+  it('searches for tracks and resolves single track by name and artist', async () => {
+    const mockSearchResults = {
+      tracks: {
+        items: [
+          {
+            id: 'found1',
+            name: 'Everything In Its Right Place',
+            artists: [{ id: 'a1', name: 'Radiohead' }],
+            album: { id: 'alb1', name: 'Kid A', images: [] },
+          },
+        ],
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mockSearchResults,
+    });
+
+    const searchRes = await searchTracks('token', 'Radiohead Kid A');
+    expect(searchRes.tracks.items[0].id).toBe('found1');
+
+    const singleTrack = await searchTrack('token', 'Everything In Its Right Place', 'Radiohead');
+    expect(singleTrack?.id).toBe('found1');
+  });
+
+  it('falls back to Last.fm recommendations and resolves Spotify tracks when Spotify returns 403', async () => {
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      // 1. Native recommendations fails with 403
+      if (url.includes('/recommendations?')) {
+        return Promise.resolve({
+          ok: false,
+          status: 403,
+          text: async () => 'Forbidden: Extended API access required',
+        });
+      }
+      // 2. Fetch seed track details from Spotify
+      if (url.includes('/tracks?ids=t1')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            tracks: [
+              {
+                id: 't1',
+                name: 'Karma Police',
+                artists: [{ id: 'a1', name: 'Radiohead' }],
+              },
+            ],
+          }),
+        });
+      }
+      // 3. Last.fm similar tracks call
+      if (url.includes('ws.audioscrobbler.com') && url.includes('track.getsimilar')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            similartracks: {
+              track: [
+                {
+                  name: 'No Surprises',
+                  artist: { name: 'Radiohead' },
+                  match: 0.95,
+                },
+              ],
+            },
+          }),
+        });
+      }
+      // 4. Spotify search resolves candidate track
+      if (url.includes('/search?')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            tracks: {
+              items: [
+                {
+                  id: 'rec_spotify_1',
+                  name: 'No Surprises',
+                  artists: [{ id: 'a1', name: 'Radiohead' }],
+                  album: { id: 'alb1', name: 'OK Computer', images: [] },
+                },
+              ],
+            },
+          }),
+        });
+      }
+      return Promise.reject(new Error(`Unhandled URL: ${url}`));
+    });
+
+    const recs = await getRecommendations('token', {
+      seedTracks: ['t1'],
+      limit: 1,
+    });
+
+    expect(recs.tracks.length).toBe(1);
+    expect(recs.tracks[0].id).toBe('rec_spotify_1');
+    expect(recs.tracks[0].name).toBe('No Surprises');
+  });
+
+  it('falls back to Last.fm audio feature estimation when Spotify returns 403', async () => {
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      // 1. Audio features fails with 403
+      if (url.includes('/audio-features/')) {
+        return Promise.resolve({
+          ok: false,
+          status: 403,
+          text: async () => 'Forbidden: Extended API access required',
+        });
+      }
+      // 2. Track details fetched
+      if (url.includes('/tracks/track_locked')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 'track_locked',
+            name: 'Harder, Better, Faster, Stronger',
+            artists: [{ id: 'art1', name: 'Daft Punk' }],
+            duration_ms: 224000,
+          }),
+        });
+      }
+      // 3. Last.fm tags fetched
+      if (url.includes('ws.audioscrobbler.com')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            toptags: {
+              tag: [{ name: 'electronic', count: 100 }, { name: 'dance', count: 90 }],
+            },
+          }),
+        });
+      }
+      return Promise.reject(new Error(`Unhandled URL: ${url}`));
+    });
+
+    const features = await getAudioFeatures('token', 'track_locked');
+    expect(features.id).toBe('track_locked');
+    expect(features.danceability).toBeGreaterThan(0.5);
+    expect(features.energy).toBeGreaterThan(0.5);
+    expect(features.duration_ms).toBe(224000);
   });
 });

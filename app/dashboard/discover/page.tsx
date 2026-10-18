@@ -53,24 +53,37 @@ export default function DiscoverPage() {
     setLoadingRecs(true);
     setError(null);
     try {
-      const { items } = await getPlaylistTracks(token, selectedPlaylist, 30);
-      const trackIds = (items || []).map((i) => i?.track?.id).filter(Boolean) as string[];
-      const seedTracks = [...trackIds].sort(() => Math.random() - 0.5).slice(0, 5);
-
-      if (seedTracks.length === 0) {
+      const { items } = await getPlaylistTracks(token, selectedPlaylist, 40);
+      const playableItems = (items || []).filter((i) => Boolean(i?.track?.id));
+      if (playableItems.length === 0) {
         setError('That playlist has no playable tracks to use as a seed.');
         setLoadingRecs(false);
         return;
       }
 
+      const seedTracks = [...playableItems]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 5)
+        .map((i) => i.track);
+
       const res = await getRecommendations(token, {
-        seedTracks,
+        seedTracks: seedTracks.map((t) => t.id),
+        seedTrackObjects: seedTracks.map((t) => ({
+          name: t.name,
+          artist: t.artists?.[0]?.name ?? '',
+        })),
         targetEnergy: energy,
         targetValence: valence,
         targetDanceability: danceability,
         limit: 20,
       });
+
       const recTracks = res?.tracks || [];
+      if (recTracks.length === 0) {
+        setError('No recommendations could be found for this playlist. Try another seed playlist.');
+        return;
+      }
+
       setRecommendations(recTracks);
       setSelected(new Set(recTracks.map((t) => t?.id).filter(Boolean)));
 
@@ -80,13 +93,7 @@ export default function DiscoverPage() {
 
       setStage('results');
     } catch (e: any) {
-      if (e instanceof SpotifyApiError && e.status === 403) {
-        setError(
-          "Spotify's recommendation engine isn't available for this app's access level. This feature needs an app with extended API access."
-        );
-      } else {
-        setError(e.message);
-      }
+      setError(e.message || 'Failed to generate recommendations.');
     } finally {
       setLoadingRecs(false);
     }

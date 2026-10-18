@@ -45,6 +45,12 @@ spec:
         - key: DAYWALKER_SIGNING_DOMAIN
           value: ${APP_DOMAIN}
           scope: RUN_TIME
+        - key: LASTFM_API_KEY
+          value: 973d6d3639d70a5915e4d9ad5525bdf8
+          scope: RUN_TIME
+        - key: NEXT_PUBLIC_LASTFM_API_KEY
+          value: 973d6d3639d70a5915e4d9ad5525bdf8
+          scope: RUN_AND_BUILD_TIME
         # Optional: enable Postgres storage (synced prefs, history, tags).
         # Leave unset to keep the default browser storage mode.
         # - key: DATABASE_URL
