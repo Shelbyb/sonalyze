@@ -45,24 +45,24 @@ const originalFetch = global.fetch;
 global.fetch = vi.fn().mockImplementation(async (url: string | URL | Request, init?: RequestInit) => {
   const urlStr = typeof url === 'string' ? url : url.toString();
   if (urlStr.includes('auth.daywalker.dev/api/v1/tokens/validate')) {
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({
+    return new Response(
+      JSON.stringify({
         valid: true,
         serviceSlug: 'sonalyze',
         tokenId: 'tok_test123',
         tokenName: 'Test Key',
       }),
-    } as Response;
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
   if (originalFetch) {
     return originalFetch(url, init);
   }
-  return {
-    ok: true,
+  return new Response(JSON.stringify({}), {
     status: 200,
-    json: async () => ({}),
-    text: async () => '',
-  } as Response;
+    headers: { 'Content-Type': 'application/json' },
+  });
 });

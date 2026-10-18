@@ -1,10 +1,13 @@
-import { createDaywalkerMiddleware } from '@shelbyb/daywalker-sdk/next';
+import {
+  createDaywalkerServiceHealthMiddleware,
+  STATIC_FILE_EXTENSIONS,
+} from '@shelbyb/daywalker-sdk/next';
 import { getClient, getDaywalkerServiceSlug } from '@/lib/daywalker-auth';
 
 export const runtime = 'nodejs';
 
 export const middleware = (request: any) => {
-  const handler = createDaywalkerMiddleware({
+  const handler = createDaywalkerServiceHealthMiddleware({
     client: getClient(),
     serviceSlug: getDaywalkerServiceSlug(),
     errorPath: '/service-error',
@@ -16,6 +19,7 @@ export const middleware = (request: any) => {
       '/robots.txt',
       '/sitemap.xml',
     ],
+    staticFileExtensions: STATIC_FILE_EXTENSIONS,
     validateServerActions: true,
   });
   return handler(request);
