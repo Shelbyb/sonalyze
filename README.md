@@ -175,7 +175,7 @@ Sonalyze includes a built-in fallback key for the Last.fm music intelligence eng
 2. Generate an **API Key** (`DAYWALKER_API_KEY`) from the dashboard for Sonalyze service authorization.
 3. Keep this key secure for your local and production environments.
 
-**Shortcut:** after `npm install`, `npm run setup` (`daywalker onboard`) does steps 1-2 for you, registers your signing key and writes a complete `.env.local` (Spotify, Last.fm, `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `APP_URL`). It asks for your Spotify and Last.fm values, sends a verification email, and can be resumed if you stop. Use `npm run setup -- --dry-run` to preview.
+[//]: # '**Shortcut:** after `npm install`, `npm run setup` (`daywalker onboard`) does steps 1-2 for you, registers your signing key and writes a complete `.env.local` (Spotify, Last.fm, `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `APP_URL`). It asks for your Spotify and Last.fm values, sends a verification email, and can be resumed if you stop. Use `npm run setup -- --dry-run` to preview.'
 
 ---
 
