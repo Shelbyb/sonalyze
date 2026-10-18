@@ -13,7 +13,7 @@ describe('Daywalker SDK Integrity & Policy Compliance', () => {
 
   it('verifies exact version pin and npm pre-hooks exist in package.json', () => {
     const pkg = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8'));
-    expect(pkg.dependencies['@shelbyb/daywalker-sdk']).toBe('0.9.1');
+    expect(pkg.dependencies['@shelbyb/daywalker-sdk']).toBe('0.10.0');
     expect(pkg.scripts.prebuild).toContain('scripts/check-daywalker.mjs');
     expect(pkg.scripts.prestart).toContain('scripts/check-daywalker.mjs');
   });

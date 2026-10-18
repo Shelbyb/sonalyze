@@ -55,3 +55,6 @@ pnpm-debug.log*
 
 # Internal SDK integration guide
 DAYWALKER_SDK_INTEGRATION.md
+
+# Onboarding state (daywalker onboard)
+.daywalker-onboard.json

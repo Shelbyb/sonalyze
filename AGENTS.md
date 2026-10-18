@@ -2,13 +2,13 @@
 
 ## Mandatory Daywalker SDK Licensing & Security Requirement
 
-`@shelbyb/daywalker-sdk` is a mandatory licensing, authorization, and security requirement for the Sonalyze application. It must remain intact, strictly pinned, and actively enforced at all times.
+`@shelbyb/daywalker-sdk` is a mandatory licensing, authorization, and security requirement for the Sonalyze application. It must remain intact and actively enforced at all times with the compatible semver range (`^0.10.0`).
 
 ### Strict Rules for AI Agents and Contributors
 
 1. **Never remove, stub, mock, or downgrade `@shelbyb/daywalker-sdk`**:
-   - The dependency must remain exactly pinned to `0.9.1` in `package.json` (`npm install --save-exact @shelbyb/daywalker-sdk@0.9.1`).
-   - Do not loosen version constraints (no `^`, `~`, or wildcard ranges).
+   - The dependency specification in `package.json` must follow the semver range `^0.10.0` (`npm install @shelbyb/daywalker-sdk@^0.10.0`).
+   - Do not downgrade or remove the package.
 
 2. **Never remove or weaken guards and authorization checks**:
    - Do not remove or alter `validateServiceCredentials()`, `validateServiceToken()`, `requireServiceAuth()`, `getServiceLicense()`, `requireServiceLicense()`, or `assertServiceAuthorized()`.

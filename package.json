@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "setup": "daywalker onboard",
     "dev:secure": "next dev --experimental-https",
     "prebuild": "node scripts/check-daywalker.mjs",
     "build": "next build",
@@ -27,7 +28,7 @@
   },
   "packageManager": "npm@11.17.0",
   "dependencies": {
-    "@shelbyb/daywalker-sdk": "0.9.1",
+    "@shelbyb/daywalker-sdk": "0.10.0",
     "@tailwindcss/postcss": "^4.3.3",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.4",

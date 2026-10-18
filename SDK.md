@@ -2,7 +2,7 @@
 
 ## Overview
 
-Sonalyze integrates `@shelbyb/daywalker-sdk` (exact pin: `0.9.1`) for cryptographic service authorization, runtime licensing, and integrity protection. This document details the SDK requirements, architecture, guards, cryptographic secret derivations, and enforcement verification procedures.
+Sonalyze integrates `@shelbyb/daywalker-sdk` (version: `^0.10.0`) for cryptographic service authorization, runtime licensing, and integrity protection. This document details the SDK requirements, architecture, guards, cryptographic secret derivations, and enforcement verification procedures.
 
 ---
 
@@ -10,7 +10,7 @@ Sonalyze integrates `@shelbyb/daywalker-sdk` (exact pin: `0.9.1`) for cryptograp
 
 ### 1. Dependency Pinning & Packaging
 
-- **Package Pin**: `@shelbyb/daywalker-sdk@0.9.1` installed with exact pinning (`npm install --save-exact @shelbyb/daywalker-sdk@0.9.1`).
+- **Package Version**: `@shelbyb/daywalker-sdk@^0.10.0` installed via semver range (`npm install @shelbyb/daywalker-sdk@^0.10.0`).
 - **Integrity**: Verified in `package-lock.json` with hash integrity and version match.
 - **Build / Start Hooks**: `prebuild` and `prestart` in `package.json` invoke `node scripts/check-daywalker.mjs` before compilation or server initialization.
 
@@ -59,7 +59,7 @@ Sonalyze integrates `@shelbyb/daywalker-sdk` (exact pin: `0.9.1`) for cryptograp
 ### Automated Checks
 
 - `scripts/check-daywalker.mjs`: Scans the repository and validates:
-  1. Exact version pin in `package.json`
+  1. Valid semver range (`^0.10.0`) in `package.json`
   2. Installation in `node_modules`
   3. `package-lock.json` integrity and version match
   4. `prebuild` and `prestart` hook definitions
@@ -80,3 +80,11 @@ Sonalyze integrates `@shelbyb/daywalker-sdk` (exact pin: `0.9.1`) for cryptograp
 
 - **Branch Protection**: Requires Code Owner reviews (@Shelbyb) and CI pass before merging to `main`.
 - **Fail Closed**: The system always fails closed (HTTP 503) on error. Bypassing or mocking the SDK in production code is strictly forbidden.
+
+---
+
+## Developer Onboarding
+
+- `npm run setup` runs `daywalker onboard` (SDK `0.10.0`): account signup or login, email verification, service selection, API token creation (allowed origins: the app URL plus `https://localhost:3000`), and signing-key registration.
+- `daywalker.onboard.mjs` at the repo root is the project hook. It prompts for the Spotify, Last.fm and `DATABASE_URL` values, generates `NEXTAUTH_SECRET`, sets `NEXTAUTH_URL` and `APP_URL` to the local origin, and prints the Spotify redirect-URI hint.
+- Progress is stored in the gitignored `.daywalker-onboard.json` (never the password, token or keys). The hook is executable code, so the CLI asks for confirmation unless `--yes` is passed.
