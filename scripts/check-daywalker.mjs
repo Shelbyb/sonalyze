@@ -228,7 +228,6 @@ export function collectProblems() {
     join(rootDir, '.github', 'CODEOWNERS'),
     join(rootDir, 'AGENTS.md'),
     join(rootDir, 'CLAUDE.md'),
-    join(rootDir, 'SDK.md'),
     join(rootDir, '.github', 'workflows', 'ci.yml'),
   ];
 
