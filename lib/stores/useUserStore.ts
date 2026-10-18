@@ -1,7 +1,23 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import type { TimeRange, SpotifyUser } from '@/types/spotify';
-import { getMe } from '@/lib/spotify';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import type { TimeRange, SpotifyUser } from "@/types/spotify";
+import { getMe } from "@/lib/spotify";
+import type { StorageAdapter } from "@/lib/storage/adapters/types";
+import { browserAdapter } from "@/lib/storage/adapters/browser";
+
+let activeAdapter: StorageAdapter = browserAdapter;
+
+export function setStorageAdapter(adapter: StorageAdapter) {
+  activeAdapter = adapter;
+}
+
+export function getStorageAdapter(): StorageAdapter {
+  return activeAdapter;
+}
+
+function safely(promise: Promise<void>) {
+  promise.catch((e) => console.warn("Storage adapter error:", e));
+}
 
 export interface UserProfile {
   id: string | null;
@@ -37,10 +53,11 @@ export interface UserStoreState {
   syncFromSession: (session: any) => void;
   syncFromSpotify: (spotifyUser: SpotifyUser) => void;
   fetchAndSyncProfile: (token: string) => Promise<void>;
+  hydrateFromAdapter: () => Promise<void>;
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
-  defaultTimeRange: 'medium_term',
+  defaultTimeRange: "medium_term",
   audioAutoplay: false,
   volume: 0.8,
 };
@@ -68,7 +85,8 @@ export const useUserStore = create<UserStoreState>()(
             image: user.image ?? state.user?.image ?? null,
             product: user.product ?? state.user?.product ?? null,
             country: user.country ?? state.user?.country ?? null,
-            followersCount: user.followersCount ?? state.user?.followersCount ?? null,
+            followersCount:
+              user.followersCount ?? state.user?.followersCount ?? null,
             spotifyUri: user.spotifyUri ?? state.user?.spotifyUri ?? null,
           },
           lastSyncedAt: Date.now(),
@@ -97,24 +115,31 @@ export const useUserStore = create<UserStoreState>()(
         set((state) => ({
           preferences: { ...state.preferences, ...preferences },
         }));
+        safely(activeAdapter.savePreferences(get().preferences));
       },
 
       setDefaultTimeRange: (defaultTimeRange) => {
         set((state) => ({
           preferences: { ...state.preferences, defaultTimeRange },
         }));
+        safely(activeAdapter.savePreferences(get().preferences));
       },
 
       setVolume: (volume) => {
         set((state) => ({
-          preferences: { ...state.preferences, volume: Math.max(0, Math.min(1, volume)) },
+          preferences: {
+            ...state.preferences,
+            volume: Math.max(0, Math.min(1, volume)),
+          },
         }));
+        safely(activeAdapter.savePreferences(get().preferences));
       },
 
       setAudioAutoplay: (audioAutoplay) => {
         set((state) => ({
           preferences: { ...state.preferences, audioAutoplay },
         }));
+        safely(activeAdapter.savePreferences(get().preferences));
       },
 
       clearUser: () => {
@@ -133,7 +158,11 @@ export const useUserStore = create<UserStoreState>()(
         if (!session?.user) return;
         const current = get().user;
         const newUser: UserProfile = {
-          id: (session as any).spotifyId || session.user.id || current?.id || null,
+          id:
+            (session as any).spotifyId ||
+            session.user.id ||
+            current?.id ||
+            null,
           name: session.user.name ?? current?.name ?? null,
           email: session.user.email ?? current?.email ?? null,
           image: session.user.image ?? current?.image ?? null,
@@ -143,6 +172,7 @@ export const useUserStore = create<UserStoreState>()(
           spotifyUri: current?.spotifyUri ?? null,
         };
         set({ user: newUser, lastSyncedAt: Date.now() });
+        safely(activeAdapter.saveUser(newUser));
       },
 
       syncFromSpotify: (spotifyUser) => {
@@ -154,10 +184,25 @@ export const useUserStore = create<UserStoreState>()(
           image: spotifyUser.images?.[0]?.url ?? current?.image ?? null,
           product: spotifyUser.product ?? current?.product ?? null,
           country: spotifyUser.country ?? current?.country ?? null,
-          followersCount: spotifyUser.followers?.total ?? current?.followersCount ?? null,
-          spotifyUri: spotifyUser.external_urls?.spotify ?? current?.spotifyUri ?? null,
+          followersCount:
+            spotifyUser.followers?.total ?? current?.followersCount ?? null,
+          spotifyUri:
+            spotifyUser.external_urls?.spotify ?? current?.spotifyUri ?? null,
         };
         set({ user: newUser, lastSyncedAt: Date.now() });
+      },
+
+      hydrateFromAdapter: async () => {
+        try {
+          const { preferences } = await activeAdapter.loadUser();
+          if (preferences) {
+            set((state) => ({
+              preferences: { ...state.preferences, ...preferences },
+            }));
+          }
+        } catch (e) {
+          console.warn("Could not load user from storage adapter:", e);
+        }
       },
 
       fetchAndSyncProfile: async (token: string) => {
@@ -169,13 +214,15 @@ export const useUserStore = create<UserStoreState>()(
           }
         } catch (e) {
           // If profile fetch fails (e.g. rate limit), keep existing persisted user state
-          console.warn('Could not fetch Spotify profile for user store:', e);
+          console.warn("Could not fetch Spotify profile for user store:", e);
         }
       },
     }),
     {
-      name: 'sonalyze_user_storage',
-      storage: createJSONStorage(() => (typeof window !== 'undefined' ? window.localStorage : ({} as Storage))),
+      name: "sonalyze_user_storage",
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? window.localStorage : ({} as Storage),
+      ),
       partialize: (state) => ({
         user: state.user,
         preferences: state.preferences,
@@ -184,6 +231,6 @@ export const useUserStore = create<UserStoreState>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
-    }
-  )
+    },
+  ),
 );

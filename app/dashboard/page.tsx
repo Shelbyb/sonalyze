@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
-import Link from 'next/link';
+import React, { useEffect, useState, useMemo } from "react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
@@ -13,16 +13,25 @@ import {
   Flame,
   Radio,
   Disc3,
-} from 'lucide-react';
-import { getTopArtists, getTopTracks, getRecentlyPlayed } from '@/lib/spotify';
-import type { SpotifyArtist, SpotifyTrack, RecentlyPlayedItem } from '@/types/spotify';
-import PageHeader from '@/components/PageHeader';
-import ArtistCard from '@/components/ArtistCard';
-import TrackRow from '@/components/TrackRow';
-import StatCard from '@/components/StatCard';
-import { TrackListSkeleton, ArtistGridSkeleton, StatCardSkeleton } from '@/components/Skeleton';
-import { ErrorState } from '@/components/StateViews';
-import { useUserStore } from '@/lib/stores/useUserStore';
+} from "lucide-react";
+import { getTopArtists, getTopTracks, getRecentlyPlayed } from "@/lib/spotify";
+import type {
+  SpotifyArtist,
+  SpotifyTrack,
+  RecentlyPlayedItem,
+} from "@/types/spotify";
+import PageHeader from "@/components/PageHeader";
+import ArtistCard from "@/components/ArtistCard";
+import TrackRow from "@/components/TrackRow";
+import SnapshotRecorder from "@/components/SnapshotRecorder";
+import StatCard from "@/components/StatCard";
+import {
+  TrackListSkeleton,
+  ArtistGridSkeleton,
+  StatCardSkeleton,
+} from "@/components/Skeleton";
+import { ErrorState } from "@/components/StateViews";
+import { useUserStore } from "@/lib/stores/useUserStore";
 
 export default function DashboardOverview() {
   const { data: session } = useSession();
@@ -39,8 +48,8 @@ export default function DashboardOverview() {
     let cancelled = false;
 
     Promise.all([
-      getTopArtists(token, 'short_term', 5),
-      getTopTracks(token, 'short_term', 5),
+      getTopArtists(token, "short_term", 5),
+      getTopTracks(token, "short_term", 5),
       getRecentlyPlayed(token, 8),
     ])
       .then(([a, t, r]) => {
@@ -68,17 +77,18 @@ export default function DashboardOverview() {
       });
     });
     const topGenre =
-      Object.entries(genreMap).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Eclectic';
+      Object.entries(genreMap).sort((a, b) => b[1] - a[1])[0]?.[0] ??
+      "Eclectic";
 
     // Top artist name
-    const topArtist = artists[0]?.name ?? 'N/A';
+    const topArtist = artists[0]?.name ?? "N/A";
 
     // Top track name
-    const topTrack = tracks[0]?.name ?? 'N/A';
+    const topTrack = tracks[0]?.name ?? "N/A";
 
     // Total duration of recent queue in minutes
     const recentMins = Math.round(
-      recent.reduce((acc, item) => acc + item.track.duration_ms, 0) / 60000
+      recent.reduce((acc, item) => acc + item.track.duration_ms, 0) / 60000,
     );
 
     return {
@@ -91,13 +101,18 @@ export default function DashboardOverview() {
     };
   }, [artists, tracks, recent]);
 
-  const name = (storeUser?.name || session?.user?.name)?.split(' ')[0];
+  const name = (storeUser?.name || session?.user?.name)?.split(" ")[0];
 
   return (
     <div className="space-y-10">
+      <SnapshotRecorder
+        timeRange="short_term"
+        tracks={tracks}
+        artists={artists}
+      />
       <PageHeader
         eyebrow="Intelligence Hub"
-        title={name ? `Welcome back, ${name}` : 'Welcome back'}
+        title={name ? `Welcome back, ${name}` : "Welcome back"}
         description="A real-time overview of your musical identity, audio preferences, and recent sessions."
         action={
           <Link
@@ -115,7 +130,9 @@ export default function DashboardOverview() {
       <section>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {!stats ? (
-            Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+            Array.from({ length: 4 }).map((_, i) => (
+              <StatCardSkeleton key={i} />
+            ))
           ) : (
             <>
               <StatCard
@@ -134,7 +151,10 @@ export default function DashboardOverview() {
               />
               <StatCard
                 title="Dominant Genre"
-                value={stats.topGenre.charAt(0).toUpperCase() + stats.topGenre.slice(1)}
+                value={
+                  stats.topGenre.charAt(0).toUpperCase() +
+                  stats.topGenre.slice(1)
+                }
                 subtitle="Taste profile leader"
                 icon={Radio}
                 badge="Style"
@@ -217,7 +237,10 @@ export default function DashboardOverview() {
         ) : (
           <div className="rounded-2xl border border-white/8 bg-panel/40 p-2 shadow-inner">
             {recent.slice(0, 5).map((r, i) => (
-              <TrackRow key={`${r.track.id}-${r.played_at}-${i}`} track={r.track} />
+              <TrackRow
+                key={`${r.track.id}-${r.played_at}-${i}`}
+                track={r.track}
+              />
             ))}
           </div>
         )}
@@ -237,7 +260,8 @@ export default function DashboardOverview() {
               Build a custom mix from your sonic profile
             </p>
             <p className="text-sm text-muted">
-              Select any seed playlist, fine-tune energy, mood, and danceability, and save new discoveries directly to Spotify.
+              Select any seed playlist, fine-tune energy, mood, and
+              danceability, and save new discoveries directly to Spotify.
             </p>
           </div>
         </div>

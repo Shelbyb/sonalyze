@@ -45,3 +45,21 @@ spec:
         - key: DAYWALKER_SIGNING_DOMAIN
           value: ${APP_DOMAIN}
           scope: RUN_TIME
+        # Optional: enable Postgres storage (synced prefs, history, tags).
+        # Leave unset to keep the default browser storage mode.
+        # - key: DATABASE_URL
+        #   value: ${db.DATABASE_URL}
+        #   scope: RUN_TIME
+        #   type: SECRET
+        # Optional read-only replica (reads use it, writes stay on the primary):
+        # - key: DATABASE_READ_URL
+        #   value: postgresql://${db.USERNAME}:${db.PASSWORD}@<replica-host>:${db.PORT}/${db.DATABASE}?sslmode=require
+        #   scope: RUN_TIME
+        #   type: SECRET
+
+# Optional managed Postgres (uncomment together with DATABASE_URL above):
+# databases:
+#   - name: db
+#     engine: PG
+#     version: "17"
+#     production: false

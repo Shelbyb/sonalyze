@@ -23,7 +23,7 @@
 
 **Sonalyze** is a high-performance web application that transforms Spotify listening data into interactive visual profiles: 30-second streaming audio previews, real-time client-side search and filtering, audio DNA radar charts, sonic archetype analysis, CSV data exports, and smart playlist generation with direct Spotify synchronization.
 
-No central database is required. Sessions are stored securely in browser-encrypted JWT cookies via NextAuth.
+No database is required. By default Sonalyze runs in **browser storage mode**, with sessions in browser-encrypted JWT cookies via NextAuth and preferences in `localStorage`. Optionally connect **Postgres** for cross-device preferences, listening history and track tags (see [Storage Modes](#-storage-modes)).
 
 ---
 
@@ -36,11 +36,13 @@ No central database is required. Sessions are stored securely in browser-encrypt
 - [2. Daywalker Account & API Key](#-2-daywalker-account--api-key)
 - [3. Configure Environment Variables](#-3-configure-environment-variables)
 - [4. Daywalker Service Authorization](#-4-daywalker-service-authorization)
+- [Storage Modes](#-storage-modes)
 - [5. Local Development](#-5-local-development)
 - [6. Testing & Quality Assurance](#-6-testing--quality-assurance)
 - [7. DigitalOcean App Platform Deployment](#-7-digitalocean-app-platform-deployment)
 - [8. Security & Hardening Safeguards](#-8-security--hardening-safeguards)
 - [9. Troubleshooting](#-9-troubleshooting)
+- [Docker & Compose](#-docker--compose)
 
 ---
 
@@ -149,6 +151,9 @@ APP_URL=https://<your_domain_url>
 | `DAYWALKER_SIGNING_DOMAIN` | ➖ Optional | `RUN_TIME` | Public hostname the signature is issued for (`sonalyze.daywalker.dev`). Takes precedence over `APP_URL`. |
 | `DAYWALKER_PUBLIC_KEY` | ➖ Optional | `RUN_TIME` | Optional Daywalker public key / JWK for zero-egress offline JWT token lease verification. |
 | `APP_URL` | ➖ Optional | `RUN_TIME` | Public origin (`https://sonalyze.daywalker.dev`). Used for the signing domain when `DAYWALKER_SIGNING_DOMAIN` is unset. |
+| `STORAGE_MODE` | ➖ Optional | `RUN_TIME` | `browser` (default) or `postgres`. When unset, Postgres is used automatically if `DATABASE_URL` is set. |
+| `DATABASE_URL` | ➖ Optional | `RUN_TIME` | 🔒 **Secret.** Postgres connection string (`postgres://user:pass@host:5432/db`). Enables database storage. |
+| `DATABASE_READ_URL` | ➖ Optional | `RUN_TIME` | 🔒 **Secret.** Read-only replica connection string. History and tag reads use it; writes always use `DATABASE_URL`. Falls back to `DATABASE_URL` when unset. |
 | `NODE_ENV` | ➖ Optional | `RUN_AND_BUILD_TIME` | Application environment mode (`production` / `development`). |
 
 **Legend**
@@ -182,6 +187,36 @@ Sonalyze enforces cryptographic service authorization directly across its runtim
 3. **Multi-Layer Service Guard**:
    - `requireServiceAuth()` guards Spotify API fetches, session resolution, and NextAuth callbacks.
    - Automatic token caching (60s TTL) with exponential backoff and jitter on rate limits.
+
+---
+
+## 🗄️ Storage Modes
+
+Sonalyze supports two storage modes, selected by environment variables. No code changes are needed.
+
+| Feature | Browser (default) | Postgres |
+| :--- | :---: | :---: |
+| Spotify login (stateless JWT cookie) | ✅ | ✅ |
+| Profile and preferences cached in `localStorage` | ✅ | ✅ |
+| Preferences and profile synced across devices | ❌ | ✅ |
+| Listening history snapshots and trends page | ❌ | ✅ |
+| Custom track tags | ❌ | ✅ |
+
+### Browser mode (default)
+Leave `DATABASE_URL` unset. Nothing else is required.
+
+### Postgres mode
+1. Start Postgres (for example `docker compose --profile postgres up -d db`).
+2. Set `DATABASE_URL=postgres://sonalyze:sonalyze@localhost:5432/sonalyze` in `.env.local`.
+3. Run `node scripts/migrate.mjs` once for local development. Containers apply migrations automatically on start.
+
+Notes:
+- Mode is resolved on the server and exposed at `GET /api/storage/capabilities`. The UI hides History and tag controls in browser mode.
+- If `DATABASE_URL` is set but the database is unreachable, the app falls back to browser mode instead of crashing.
+- Spotify tokens are never stored in the database. Rows are keyed by Spotify user id.
+- Existing `localStorage` data is not imported automatically. Preferences sync from the database after the first login.
+- Set `DATABASE_READ_URL` to route read-heavy queries (history, tags) to a read-only replica. Preferences and all writes stay on the primary to avoid replica lag.
+- Set `STORAGE_MODE=browser` to force browser mode even when `DATABASE_URL` is set.
 
 ---
 
@@ -255,7 +290,7 @@ The button uses [`.do/deploy.template.yaml`](./.do/deploy.template.yaml). Before
 
 ## 🔒 8. Security & Hardening Safeguards
 
-- **Stateless Cookies**: Zero server-side session persistence.
+- **Stateless Cookies**: Zero server-side session persistence. Sessions and Spotify tokens never touch a database. In Postgres mode only profile, preferences, history snapshots and tags are stored.
 - **Strict Content Security & Headers**:
   - `Strict-Transport-Security` (max-age=63072000; preload)
   - `X-Frame-Options: DENY`
@@ -288,3 +323,29 @@ Loading the site redirected to `/service-error` with the message `No active key 
 
 > [!NOTE]
 > Always set `DAYWALKER_KEY_ID` and `DAYWALKER_SIGNING_KEY` together from the same run. Running `init` with a new key replaces the previously active key.
+
+### Postgres mode shows browser-mode behavior
+
+**Problem**
+
+History and tag controls are missing even though `DATABASE_URL` is set.
+
+**Fix**
+
+1. Open `/api/storage/capabilities`. A `warning` field means the database is unreachable.
+2. Check the connection string and that Postgres is running (`docker compose --profile postgres ps`).
+3. Run `node scripts/migrate.mjs` and check its output. Also check that `STORAGE_MODE` is not set to `browser`.
+
+---
+
+## 🐳 Docker & Compose
+
+```bash
+# Browser mode (default)
+docker compose up --build
+
+# Postgres mode: set DATABASE_URL=postgres://sonalyze:sonalyze@db:5432/sonalyze in .env, then
+docker compose --profile postgres up --build
+```
+
+The image entrypoint runs `scripts/migrate.mjs` only when `DATABASE_URL` is set, then starts `server.js`. For DigitalOcean, see the commented optional `DATABASE_URL` and `databases` blocks in [`.do/app.yaml`](./.do/app.yaml) and [`.do/deploy.template.yaml`](./.do/deploy.template.yaml).
