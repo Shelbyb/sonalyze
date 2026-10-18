@@ -1,18 +1,19 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Radar, Play, Pause, Music } from 'lucide-react';
-import type { SpotifyTrack } from '@/types/spotify';
-import { useAudioPlayer } from './AudioPlayerContext';
-import EqBars from './EqBars';
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Radar, Play, Pause, Music } from "lucide-react";
+import type { SpotifyTrack } from "@/types/spotify";
+import { useAudioPlayer } from "./AudioPlayerContext";
+import EqBars from "./EqBars";
+import TrackTags from "./TrackTags";
 
 function formatDuration(ms: number) {
   const totalSeconds = Math.round(ms / 1000);
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 export default function TrackRow({
@@ -34,28 +35,42 @@ export default function TrackRow({
     <div
       data-testid="track-row"
       className={`group flex items-center gap-3 sm:gap-4 rounded-xl px-3 py-2.5 transition-colors ${
-        isCurrent ? 'bg-elevated/80' : 'hover:bg-elevated/60'
+        isCurrent ? "bg-elevated/80" : "hover:bg-elevated/60"
       }`}
     >
       {/* Rank or Play button on hover */}
       <div className="relative flex h-6 w-6 shrink-0 items-center justify-center text-right font-display text-xs font-semibold text-subtle">
         {isCurrentlyPlaying ? (
           <EqBars className="text-accent" />
-        ) : typeof rank === 'number' ? (
+        ) : typeof rank === "number" ? (
           <span className="group-hover:hidden">{rank}</span>
         ) : null}
         <button
           onClick={() => playTrack(track)}
-          aria-label={isCurrentlyPlaying ? `Pause ${track.name}` : `Play preview of ${track.name}`}
+          aria-label={
+            isCurrentlyPlaying
+              ? `Pause ${track.name}`
+              : `Play preview of ${track.name}`
+          }
           className={`flex h-6 w-6 items-center justify-center rounded-full text-cream transition-transform hover:scale-110 ${
-            isCurrentlyPlaying ? 'hidden group-hover:flex' : typeof rank === 'number' ? 'hidden group-hover:flex' : 'flex'
+            isCurrentlyPlaying
+              ? "hidden group-hover:flex"
+              : typeof rank === "number"
+                ? "hidden group-hover:flex"
+                : "flex"
           }`}
-          title={track.preview_url ? 'Listen to 30s preview' : 'Preview not available from Spotify'}
+          title={
+            track.preview_url
+              ? "Listen to 30s preview"
+              : "Preview not available from Spotify"
+          }
         >
           {isCurrentlyPlaying ? (
             <Pause className="h-3.5 w-3.5 fill-current text-accent" />
           ) : (
-            <Play className={`h-3.5 w-3.5 fill-current ${track.preview_url ? 'text-accent' : 'text-subtle'}`} />
+            <Play
+              className={`h-3.5 w-3.5 fill-current ${track.preview_url ? "text-accent" : "text-subtle"}`}
+            />
           )}
         </button>
       </div>
@@ -65,7 +80,7 @@ export default function TrackRow({
         {img ? (
           <Image
             src={img}
-            alt={track.album?.name || track.name || 'Track cover'}
+            alt={track.album?.name || track.name || "Track cover"}
             fill
             sizes="48px"
             className="object-cover"
@@ -81,11 +96,14 @@ export default function TrackRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <a
-            href={track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`}
+            href={
+              track.external_urls?.spotify ||
+              `https://open.spotify.com/track/${track.id}`
+            }
             target="_blank"
             rel="noreferrer"
             className={`block truncate text-sm font-medium transition-colors hover:underline ${
-              isCurrent ? 'text-accent font-semibold' : 'text-cream'
+              isCurrent ? "text-accent font-semibold" : "text-cream"
             }`}
           >
             {track.name}
@@ -97,8 +115,8 @@ export default function TrackRow({
           )}
         </div>
         <p className="truncate text-xs text-subtle">
-          {(track.artists || []).map((a) => a.name).join(', ')}
-          {meta ? ` · ${meta}` : ''}
+          {(track.artists || []).map((a) => a.name).join(", ")}
+          {meta ? ` · ${meta}` : ""}
         </p>
       </div>
 
@@ -106,6 +124,8 @@ export default function TrackRow({
       <span className="hidden shrink-0 text-xs text-subtle sm:block">
         {formatDuration(track.duration_ms)}
       </span>
+
+      <TrackTags trackId={track.id} />
 
       {/* Audio Breakdown (Radar) Link */}
       <Link

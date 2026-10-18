@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   LayoutGrid,
   BarChart3,
@@ -14,27 +14,37 @@ import {
   Wand2,
   LogOut,
   Waves,
-} from 'lucide-react';
-import clsx from 'clsx';
-import { useUserStore } from '@/lib/stores/useUserStore';
+  TrendingUp,
+} from "lucide-react";
+import clsx from "clsx";
+import { useUserStore } from "@/lib/stores/useUserStore";
+import { useCapabilities } from "@/hooks/useCapabilities";
+
+const historyLink = {
+  href: "/dashboard/history",
+  label: "Trends",
+  icon: TrendingUp,
+};
 
 const links = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutGrid },
-  { href: '/dashboard/top-artists', label: 'Artists', icon: BarChart3 },
-  { href: '/dashboard/top-tracks', label: 'Tracks', icon: Music2 },
-  { href: '/dashboard/recently-played', label: 'Recent', icon: History },
-  { href: '/dashboard/taste-profile', label: 'Profile', icon: Compass },
-  { href: '/dashboard/playlists', label: 'Playlists', icon: ListMusic },
-  { href: '/dashboard/discover', label: 'Generate', icon: Wand2 },
+  { href: "/dashboard", label: "Overview", icon: LayoutGrid },
+  { href: "/dashboard/top-artists", label: "Artists", icon: BarChart3 },
+  { href: "/dashboard/top-tracks", label: "Tracks", icon: Music2 },
+  { href: "/dashboard/recently-played", label: "Recent", icon: History },
+  { href: "/dashboard/taste-profile", label: "Profile", icon: Compass },
+  { href: "/dashboard/playlists", label: "Playlists", icon: ListMusic },
+  { href: "/dashboard/discover", label: "Generate", icon: Wand2 },
 ];
 
 export default function MobileNav() {
   const pathname = usePathname();
+  const capabilities = useCapabilities();
+  const navLinks = capabilities.history ? [...links, historyLink] : links;
   const clearUser = useUserStore((s) => s.clearUser);
 
   const handleLogout = async () => {
     clearUser();
-    await signOut({ callbackUrl: '/' });
+    await signOut({ callbackUrl: "/" });
   };
 
   return (
@@ -44,7 +54,9 @@ export default function MobileNav() {
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-black">
             <Waves className="h-3.5 w-3.5" strokeWidth={2.5} />
           </div>
-          <span className="font-display text-sm font-bold tracking-tight text-cream">Sonalyze</span>
+          <span className="font-display text-sm font-bold tracking-tight text-cream">
+            Sonalyze
+          </span>
         </Link>
         <button
           onClick={handleLogout}
@@ -55,15 +67,17 @@ export default function MobileNav() {
         </button>
       </div>
       <nav className="scrollbar-none flex gap-1 overflow-x-auto px-3 pb-3">
-        {links.map(({ href, label, icon: Icon }) => {
+        {navLinks.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
           return (
             <Link
               key={href}
               href={href}
               className={clsx(
-                'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
-                active ? 'bg-accent text-black font-semibold' : 'bg-elevated text-muted'
+                "flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors",
+                active
+                  ? "bg-accent text-black font-semibold"
+                  : "bg-elevated text-muted",
               )}
             >
               <Icon className="h-3.5 w-3.5" strokeWidth={2} />
