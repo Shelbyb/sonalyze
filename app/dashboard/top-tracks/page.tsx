@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
 import {
   Search,
   Download,
@@ -16,13 +15,12 @@ import TrackRow from '@/components/TrackRow';
 import TimeRangeTabs from '@/components/TimeRangeTabs';
 import { TrackListSkeleton } from '@/components/Skeleton';
 import { ErrorState, EmptyState } from '@/components/StateViews';
-import { useUserStore } from '@/lib/stores/useUserStore';
+import { useSpotifyToken, useUserStore } from '@/hooks';
 
 type SortOption = 'rank' | 'name' | 'artist' | 'duration' | 'popularity';
 
 export default function TopTracksPage() {
-  const { data: session } = useSession();
-  const token = (session as any)?.accessToken as string | undefined;
+  const { token } = useSpotifyToken();
 
   const defaultRange = useUserStore((s) => s.preferences.defaultTimeRange);
   const setDefaultTimeRange = useUserStore((s) => s.setDefaultTimeRange);

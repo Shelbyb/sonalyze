@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
 import {
   BarChart,
   Bar,
@@ -20,7 +19,7 @@ import type { TimeRange } from '@/types/spotify';
 import PageHeader from '@/components/PageHeader';
 import TimeRangeTabs from '@/components/TimeRangeTabs';
 import { LoadingState, ErrorState } from '@/components/StateViews';
-import { useUserStore } from '@/lib/stores/useUserStore';
+import { useSpotifyToken, useUserStore } from '@/hooks';
 
 const GREEN_SHADES = ['#1ed760', '#1db954', '#17a34a', '#0f7a37', '#0a5c2a', '#083f1c'];
 
@@ -34,8 +33,7 @@ const FEATURE_KEYS: { key: string; label: string }[] = [
 ];
 
 export default function TasteProfilePage() {
-  const { data: session } = useSession();
-  const token = (session as any)?.accessToken as string | undefined;
+  const { token } = useSpotifyToken();
 
   const defaultRange = useUserStore((s) => s.preferences.defaultTimeRange);
   const setDefaultTimeRange = useUserStore((s) => s.setDefaultTimeRange);

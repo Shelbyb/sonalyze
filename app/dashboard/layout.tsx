@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getAuthSession();
 
-  if (!session || (session as any).error) {
+  if (!session || session.error) {
     redirect('/');
   }
 

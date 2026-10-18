@@ -159,7 +159,7 @@ export const useUserStore = create<UserStoreState>()(
         const current = get().user;
         const newUser: UserProfile = {
           id:
-            (session as any).spotifyId ||
+            session.spotifyId ||
             session.user.id ||
             current?.id ||
             null,

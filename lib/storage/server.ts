@@ -3,8 +3,8 @@ import { getAuthSession } from "@/lib/getSession";
 import { getDb, getReadDb } from "@/lib/db/client";
 
 export async function requireUserDb() {
-  const session = (await getAuthSession()) as any;
-  const spotifyId: string | undefined = session?.spotifyId;
+  const session = await getAuthSession();
+  const spotifyId: string | undefined = session?.spotifyId || session?.user?.id;
   if (!spotifyId) {
     return {
       error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),

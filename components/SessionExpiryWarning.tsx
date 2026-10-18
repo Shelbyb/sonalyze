@@ -18,7 +18,7 @@ export default function SessionExpiryWarning() {
   // Determine expiration timestamp from session
   const getExpiresAt = useCallback(() => {
     if (!session) return null;
-    const tokenExpires = (session as any)?.accessTokenExpires as number | undefined;
+    const tokenExpires = session.accessTokenExpires;
     const sessionExpires = session.expires ? new Date(session.expires).getTime() : null;
 
     if (tokenExpires && sessionExpires) {
@@ -61,7 +61,7 @@ export default function SessionExpiryWarning() {
     }
 
     // If session has an error, redirect to main page to login
-    if ((session as any)?.error) {
+    if (session.error) {
       signOut({ callbackUrl: '/?error=SessionExpired' });
       return;
     }

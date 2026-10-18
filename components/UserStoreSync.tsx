@@ -31,7 +31,7 @@ export default function UserStoreSync() {
     if (status === "authenticated" && session) {
       syncFromSession(session);
 
-      const token = (session as any)?.accessToken as string | undefined;
+      const token = session.accessToken;
       if (token && token !== lastSyncedTokenRef.current) {
         lastSyncedTokenRef.current = token;
         fetchAndSyncProfile(token);

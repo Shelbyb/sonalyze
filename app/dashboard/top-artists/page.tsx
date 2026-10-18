@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { getTopArtists } from '@/lib/spotify';
 import type { SpotifyArtist, TimeRange } from '@/types/spotify';
@@ -10,13 +9,12 @@ import ArtistCard from '@/components/ArtistCard';
 import TimeRangeTabs from '@/components/TimeRangeTabs';
 import { ArtistGridSkeleton } from '@/components/Skeleton';
 import { ErrorState, EmptyState } from '@/components/StateViews';
-import { useUserStore } from '@/lib/stores/useUserStore';
+import { useSpotifyToken, useUserStore } from '@/hooks';
 
 type SortOption = 'rank' | 'name' | 'popularity';
 
 export default function TopArtistsPage() {
-  const { data: session } = useSession();
-  const token = (session as any)?.accessToken as string | undefined;
+  const { token } = useSpotifyToken();
 
   const defaultRange = useUserStore((s) => s.preferences.defaultTimeRange);
   const setDefaultTimeRange = useUserStore((s) => s.setDefaultTimeRange);

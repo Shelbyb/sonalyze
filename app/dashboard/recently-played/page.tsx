@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
 import { Search, Download, Clock, Disc3, Users } from 'lucide-react';
 import { getRecentlyPlayed } from '@/lib/spotify';
 import type { RecentlyPlayedItem } from '@/types/spotify';
@@ -9,6 +8,7 @@ import PageHeader from '@/components/PageHeader';
 import TrackRow from '@/components/TrackRow';
 import { TrackListSkeleton } from '@/components/Skeleton';
 import { ErrorState, EmptyState } from '@/components/StateViews';
+import { useSpotifyToken } from '@/hooks';
 
 function dayLabel(iso: string) {
   const date = new Date(iso);
@@ -31,8 +31,7 @@ function timeLabel(iso: string) {
 }
 
 export default function RecentlyPlayedPage() {
-  const { data: session } = useSession();
-  const token = (session as any)?.accessToken as string | undefined;
+  const { token } = useSpotifyToken();
 
   const [items, setItems] = useState<RecentlyPlayedItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);

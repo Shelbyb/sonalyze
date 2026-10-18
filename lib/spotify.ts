@@ -314,13 +314,37 @@ export const getUserPlaylists = (token: string, limit = 50) =>
     3 * 60 * 1000
   );
 
-export const getPlaylistTracks = (token: string, playlistId: string, limit = 50) =>
-  spotifyFetch<{ items: { track: SpotifyTrack }[] }>(
-    token,
-    `/playlists/${playlistId}/tracks?limit=${limit}&fields=items(track(id,name,artists,album,duration_ms,popularity,preview_url,external_urls,explicit))`,
-    undefined,
-    3 * 60 * 1000
-  );
+export const getPlaylistTracks = async (
+  token: string,
+  playlistId: string,
+  limit = 50
+): Promise<{ items: { track: SpotifyTrack }[] }> => {
+  try {
+    return await spotifyFetch<{ items: { track: SpotifyTrack }[] }>(
+      token,
+      `/playlists/${playlistId}/tracks?limit=${limit}`,
+      undefined,
+      3 * 60 * 1000
+    );
+  } catch (err) {
+    if (err instanceof SpotifyApiError && (err.status === 403 || err.status === 404)) {
+      try {
+        const full = await spotifyFetch<{ tracks?: { items: { track: SpotifyTrack }[] } }>(
+          token,
+          `/playlists/${playlistId}`,
+          undefined,
+          3 * 60 * 1000
+        );
+        if (full?.tracks?.items) {
+          return { items: full.tracks.items };
+        }
+      } catch {
+        // rethrow original error
+      }
+    }
+    throw err;
+  }
+};
 
 export async function getRecommendationsFromLastFm(
   token: string,

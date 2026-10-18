@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -23,40 +22,16 @@ import {
 import { getTrack, getAudioFeatures, SpotifyApiError } from '@/lib/spotify';
 import type { SpotifyTrack, AudioFeatures } from '@/types/spotify';
 import { LoadingState, ErrorState } from '@/components/StateViews';
-import { useAudioPlayer } from '@/components/AudioPlayerContext';
+import { useAudioPlayer, useSpotifyToken } from '@/hooks';
 import EqBars from '@/components/EqBars';
-
-const KEYS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
-
-// Camelot wheel mapping for harmonic mixing
-const CAMELOT_KEYS: Record<string, string> = {
-  'C maj': '8B', 'C min': '5A',
-  'C♯ maj': '3B', 'C♯ min': '12A',
-  'D maj': '10B', 'D min': '7A',
-  'D♯ maj': '5B', 'D♯ min': '2A',
-  'E maj': '12B', 'E min': '9A',
-  'F maj': '7B', 'F min': '4A',
-  'F♯ maj': '2B', 'F♯ min': '11A',
-  'G maj': '9B', 'G min': '6A',
-  'G♯ maj': '4B', 'G♯ min': '1A',
-  'A maj': '11B', 'A min': '8A',
-  'A♯ maj': '6B', 'A♯ min': '3A',
-  'B maj': '1B', 'B min': '10A',
-};
-
-const STAT_LABELS: { key: keyof AudioFeatures; label: string; hint: string }[] = [
-  { key: 'danceability', label: 'Danceability', hint: 'Rhythmic suitability for dancing based on tempo and beat strength' },
-  { key: 'energy', label: 'Energy', hint: 'Perceived intensity, activity, speed, and loudness' },
-  { key: 'valence', label: 'Valence (Positivity)', hint: 'Musical cheerfulness and euphoria vs gloominess' },
-  { key: 'acousticness', label: 'Acousticness', hint: 'Confidence level whether the track is purely acoustic' },
-  { key: 'instrumentalness', label: 'Instrumentalness', hint: 'Likelihood that the track contains no vocal content' },
-  { key: 'liveness', label: 'Liveness', hint: 'Audience presence detection in the recording' },
-  { key: 'speechiness', label: 'Speechiness', hint: 'Presence of spoken words like rap or podcast' },
-];
+import {
+  AUDIO_STAT_DEFINITIONS,
+  formatMusicalKey,
+  getCamelotKey,
+} from '@/lib/music';
 
 export default function TrackDetailPage() {
-  const { data: session } = useSession();
-  const token = (session as any)?.accessToken as string | undefined;
+  const { token } = useSpotifyToken();
   const params = useParams();
   const trackId = Array.isArray(params?.id) ? params?.id[0] : params?.id;
 
@@ -84,20 +59,21 @@ export default function TrackDetailPage() {
       });
   }, [token, trackId]);
 
+  const radarData = useMemo(() => {
+    if (!features) return [];
+    return AUDIO_STAT_DEFINITIONS.map(({ key, label }) => ({
+      stat: label.split(' ')[0],
+      value: Math.round((features[key] as number) * 100),
+    }));
+  }, [features]);
+
   if (error) return <ErrorState message="Couldn't load this track." hint={error} />;
   if (!track) return <LoadingState label="Analyzing track audio DNA" />;
 
   const isCurrentPlaying = currentTrack?.id === track.id && isPlaying;
   const img = track.album.images?.[0]?.url;
-  const radarData = features
-    ? STAT_LABELS.map(({ key, label }) => ({
-        stat: label.split(' ')[0],
-        value: Math.round((features[key] as number) * 100),
-      }))
-    : [];
-
-  const keyText = `${KEYS[features?.key ?? 0] ?? '—'} ${features?.mode === 1 ? 'maj' : 'min'}`;
-  const camelotKey = CAMELOT_KEYS[keyText] ?? null;
+  const keyText = features ? formatMusicalKey(features.key, features.mode) : '—';
+  const camelotKey = features ? getCamelotKey(features.key, features.mode) : null;
 
   return (
     <div className="space-y-8">
@@ -231,7 +207,7 @@ export default function TrackDetailPage() {
                 Audio Metrics Breakdown
               </h2>
               <div className="space-y-3.5">
-                {STAT_LABELS.map(({ key, label, hint }) => (
+                {AUDIO_STAT_DEFINITIONS.map(({ key, label, hint }) => (
                   <div key={key}>
                     <div className="mb-1 flex items-baseline justify-between">
                       <span className="text-xs font-medium text-cream" title={hint}>

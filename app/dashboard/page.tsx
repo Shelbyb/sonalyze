@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
-import { useSession } from "next-auth/react";
-import Link from "next/link";
+import React, { useEffect, useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   ArrowRight,
   BarChart3,
@@ -13,30 +12,29 @@ import {
   Flame,
   Radio,
   Disc3,
-} from "lucide-react";
-import { getTopArtists, getTopTracks, getRecentlyPlayed } from "@/lib/spotify";
+} from 'lucide-react';
+import { getTopArtists, getTopTracks, getRecentlyPlayed } from '@/lib/spotify';
 import type {
   SpotifyArtist,
   SpotifyTrack,
   RecentlyPlayedItem,
-} from "@/types/spotify";
-import PageHeader from "@/components/PageHeader";
-import ArtistCard from "@/components/ArtistCard";
-import TrackRow from "@/components/TrackRow";
-import SnapshotRecorder from "@/components/SnapshotRecorder";
-import StatCard from "@/components/StatCard";
+} from '@/types/spotify';
+import PageHeader from '@/components/PageHeader';
+import ArtistCard from '@/components/ArtistCard';
+import TrackRow from '@/components/TrackRow';
+import SnapshotRecorder from '@/components/SnapshotRecorder';
+import StatCard from '@/components/StatCard';
 import {
   TrackListSkeleton,
   ArtistGridSkeleton,
   StatCardSkeleton,
-} from "@/components/Skeleton";
-import { ErrorState } from "@/components/StateViews";
-import { useUserStore } from "@/lib/stores/useUserStore";
+} from '@/components/Skeleton';
+import { ErrorState } from '@/components/StateViews';
+import { useSpotifyToken, useUserStore } from '@/hooks';
 
 export default function DashboardOverview() {
-  const { data: session } = useSession();
+  const { session, token } = useSpotifyToken();
   const storeUser = useUserStore((s) => s.user);
-  const token = (session as any)?.accessToken as string | undefined;
 
   const [artists, setArtists] = useState<SpotifyArtist[] | null>(null);
   const [tracks, setTracks] = useState<SpotifyTrack[] | null>(null);

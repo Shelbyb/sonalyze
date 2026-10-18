@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { Wand2, CheckCircle2, ExternalLink, RefreshCw } from 'lucide-react';
 import {
   getUserPlaylists,
@@ -16,12 +15,12 @@ import type { SpotifyPlaylist, SpotifyTrack } from '@/types/spotify';
 import PageHeader from '@/components/PageHeader';
 import { LoadingState, ErrorState } from '@/components/StateViews';
 import TrackRow from '@/components/TrackRow';
+import { useSpotifyToken } from '@/hooks';
 
 type Stage = 'pick' | 'tuning' | 'results' | 'saved';
 
 export default function DiscoverPage() {
-  const { data: session } = useSession();
-  const token = (session as any)?.accessToken as string | undefined;
+  const { token } = useSpotifyToken();
 
   const [stage, setStage] = useState<Stage>('pick');
   const [playlists, setPlaylists] = useState<SpotifyPlaylist[] | null>(null);
