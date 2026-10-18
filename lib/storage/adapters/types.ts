@@ -1,4 +1,4 @@
-import type { UserProfile, UserPreferences } from "@/lib/stores/useUserStore";
+import type { UserProfile, UserPreferences } from '@/lib/stores/useUserStore';
 
 export interface StorageAdapter {
   loadUser(): Promise<{

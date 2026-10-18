@@ -66,7 +66,7 @@ export function assertSdkIntact(): void {
     throw new DaywalkerAuthError(
       'Daywalker SDK prototype integrity compromised',
       503,
-      'SDK_INTEGRITY_COMPROMISED'
+      'SDK_INTEGRITY_COMPROMISED',
     );
   }
 }
@@ -91,12 +91,15 @@ export function getResolvedServiceApiKey(): string | null {
     process.env.DAYWALKER_API_KEY ||
       process.env.DAYWALKER_SERVICE_TOKEN ||
       process.env.SERVICE_API_KEY ||
-      ''
+      '',
   );
 }
 
 export function getDaywalkerAuthUrl(): string {
-  return (process.env.DAYWALKER_AUTH_URL || 'https://auth.daywalker.dev').replace(/\/+$/, '');
+  return (process.env.DAYWALKER_AUTH_URL || 'https://auth.daywalker.dev').replace(
+    /\/+$/,
+    '',
+  );
 }
 
 export function getDaywalkerServiceSlug(): string {
@@ -116,11 +119,14 @@ let activeClient: Daywalker | null = null;
 
 export function getDaywalkerClient(overrides: DaywalkerConfig = {}): Daywalker {
   const apiKey = overrides.apiKey ?? (getResolvedServiceApiKey() || undefined);
-  const signingKey = overrides.signingKey ?? (resolveSecretValue(process.env.DAYWALKER_SIGNING_KEY) || undefined);
+  const signingKey =
+    overrides.signingKey ??
+    (resolveSecretValue(process.env.DAYWALKER_SIGNING_KEY) || undefined);
   const serviceSlug = overrides.serviceSlug ?? getDaywalkerServiceSlug();
   const domain = overrides.domain ?? getSigningDomain() ?? undefined;
   const authUrl = overrides.authUrl ?? getDaywalkerAuthUrl();
-  const daywalkerPublicKey = overrides.daywalkerPublicKey ?? (process.env.DAYWALKER_PUBLIC_KEY || undefined);
+  const daywalkerPublicKey =
+    overrides.daywalkerPublicKey ?? (process.env.DAYWALKER_PUBLIC_KEY || undefined);
   const keyId = overrides.keyId ?? (process.env.DAYWALKER_KEY_ID || undefined);
 
   return createDaywalker({
@@ -167,7 +173,7 @@ export function clearLicenseCache(): void {
 export function deriveRuntimeSecret(
   licenseKey: string,
   salt: string,
-  serviceSlug: string = getDaywalkerServiceSlug()
+  serviceSlug: string = getDaywalkerServiceSlug(),
 ): string {
   const ikm = licenseKey;
   const saltBuf = Buffer.from(salt, 'utf-8');
@@ -186,7 +192,7 @@ export function getCachedRuntimeSecret(): string | null {
 async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs = 5000,
-  errorMsg = 'Operation timed out'
+  errorMsg = 'Operation timed out',
 ): Promise<T> {
   let timer: NodeJS.Timeout | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -206,7 +212,7 @@ async function withTimeout<T>(
  * Validates the service credentials with Daywalker Auth using the Daywalker SDK.
  */
 export async function validateServiceToken(
-  options: ValidateServiceTokenOptions = {}
+  options: ValidateServiceTokenOptions = {},
 ): Promise<ServiceAuthResult> {
   try {
     assertSdkIntact();
@@ -219,7 +225,7 @@ export async function validateServiceToken(
         forceRefresh: options.forceRefresh,
       }),
       5000,
-      'Service validation timed out'
+      'Service validation timed out',
     );
 
     if (result.ok) {
@@ -238,7 +244,8 @@ export async function validateServiceToken(
       retryAfter: result.retryAfter,
     };
   } catch (err: any) {
-    const status = err instanceof DaywalkerAuthError || err?.status ? err.status || 503 : 503;
+    const status =
+      err instanceof DaywalkerAuthError || err?.status ? err.status || 503 : 503;
     const error = err?.code || err?.error || 'SERVICE_UNAVAILABLE';
     return {
       valid: false,
@@ -254,14 +261,14 @@ export async function validateServiceToken(
  * Throws a DaywalkerAuthError / ServiceAuthError if token validation fails.
  */
 export async function requireServiceAuth(
-  options: ValidateServiceTokenOptions = {}
+  options: ValidateServiceTokenOptions = {},
 ): Promise<TokenPayload> {
   const result = await validateServiceToken(options);
   if (!result.valid) {
     throw new DaywalkerAuthError(
       result.message || 'Daywalker service authorization check failed.',
       result.status || 503,
-      result.error || 'UNAUTHORIZED'
+      result.error || 'UNAUTHORIZED',
     );
   }
   return result.data!;
@@ -275,7 +282,7 @@ export async function getServiceLicense(
     serviceSlug?: string;
     forceRefresh?: boolean;
     client?: Daywalker;
-  } = {}
+  } = {},
 ): Promise<ServiceLicenseResult> {
   try {
     assertSdkIntact();
@@ -302,17 +309,21 @@ export async function getServiceLicense(
         client.fetchBundle({ serviceSlug, forceRefresh: options.forceRefresh }),
       ]),
       5000,
-      'License fetch timed out'
+      'License fetch timed out',
     );
 
     const licenseExpires = new Date(license.expiresAt).getTime();
     const bundleExpires = new Date(bundle.expiresAt).getTime();
     const earliestExpiry = Math.min(
       Number.isFinite(licenseExpires) ? licenseExpires : now + 3600_000,
-      Number.isFinite(bundleExpires) ? bundleExpires : now + 3600_000
+      Number.isFinite(bundleExpires) ? bundleExpires : now + 3600_000,
     );
 
-    const runtimeSecret = deriveRuntimeSecret(license.licenseKey, bundle.dataKeySalt, serviceSlug);
+    const runtimeSecret = deriveRuntimeSecret(
+      license.licenseKey,
+      bundle.dataKeySalt,
+      serviceSlug,
+    );
 
     const data = {
       license,
@@ -360,7 +371,7 @@ export async function requireServiceLicense(
     serviceSlug?: string;
     forceRefresh?: boolean;
     client?: Daywalker;
-  } = {}
+  } = {},
 ): Promise<{
   license: License;
   bundle: ConfigBundle;
@@ -372,7 +383,7 @@ export async function requireServiceLicense(
     throw new DaywalkerAuthError(
       result.message || 'Service licensing verification failed.',
       result.status || 503,
-      result.code || result.error || 'LICENSE_UNAVAILABLE'
+      result.code || result.error || 'LICENSE_UNAVAILABLE',
     );
   }
   return result.data;

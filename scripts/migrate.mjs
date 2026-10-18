@@ -21,12 +21,17 @@ if (
   process.exit(1);
 }
 
-const serviceSlug = (process.env.DAYWALKER_SERVICE_SLUG || 'sonalyze').trim().toLowerCase();
+const serviceSlug = (process.env.DAYWALKER_SERVICE_SLUG || 'sonalyze')
+  .trim()
+  .toLowerCase();
 const client = createDaywalker({
   apiKey: process.env.DAYWALKER_API_KEY || process.env.DAYWALKER_SERVICE_TOKEN,
   signingKey: process.env.DAYWALKER_SIGNING_KEY,
   serviceSlug,
-  domain: process.env.DAYWALKER_SIGNING_DOMAIN || process.env.DAYWALKER_DOMAIN || process.env.APP_URL,
+  domain:
+    process.env.DAYWALKER_SIGNING_DOMAIN ||
+    process.env.DAYWALKER_DOMAIN ||
+    process.env.APP_URL,
   authUrl: process.env.DAYWALKER_AUTH_URL || 'https://auth.daywalker.dev',
 });
 
@@ -44,8 +49,12 @@ const sql = postgres(url, { max: 1, connect_timeout: 10 });
 
 try {
   await sql`CREATE TABLE IF NOT EXISTS _sonalyze_migrations (name text PRIMARY KEY, applied_at timestamptz DEFAULT now())`;
-  const applied = new Set((await sql`SELECT name FROM _sonalyze_migrations`).map((r) => r.name));
-  const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+  const applied = new Set(
+    (await sql`SELECT name FROM _sonalyze_migrations`).map((r) => r.name),
+  );
+  const files = readdirSync(dir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
   for (const file of files) {
     if (applied.has(file)) continue;
     await sql.begin(async (tx) => {
@@ -56,7 +65,10 @@ try {
   }
   console.log('[migrate] up to date.');
 } catch (e) {
-  console.error('[migrate] failed, app will fall back to browser storage. Reason:', e?.code ?? 'unknown error');
+  console.error(
+    '[migrate] failed, app will fall back to browser storage. Reason:',
+    e?.code ?? 'unknown error',
+  );
 } finally {
   await sql.end();
 }

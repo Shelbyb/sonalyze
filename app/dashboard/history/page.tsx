@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState, useMemo } from "react";
-import { Database, Clock, TrendingUp, Sparkles } from "lucide-react";
-import { useCapabilities } from "@/hooks/useCapabilities";
-import PageHeader from "@/components/PageHeader";
-import { LoadingState, ErrorState, EmptyState } from "@/components/StateViews";
+import React, { useEffect, useState, useMemo } from 'react';
+import { Database, Clock, TrendingUp } from 'lucide-react';
+import { useCapabilities } from '@/hooks/useCapabilities';
+import PageHeader from '@/components/PageHeader';
+import { LoadingState, ErrorState, EmptyState } from '@/components/StateViews';
+import { fetchWithRetry } from '@/lib/fetch-retry';
 
 interface TopTrackItem {
   id: string;
@@ -41,7 +42,7 @@ export default function HistoryPage() {
     }
     setLoading(true);
     setError(null);
-    fetch("/api/user/history?timeRange=short_term")
+    fetchWithRetry('/api/user/history?timeRange=short_term')
       .then(async (r) => {
         if (!r.ok) {
           const data = await r.json().catch(() => ({}));
@@ -79,20 +80,20 @@ export default function HistoryPage() {
 
   if (!history) {
     return (
-      <div
-        className="mx-auto max-w-xl py-16 text-center"
-        data-testid="history-hint"
-      >
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+      <div className="mx-auto max-w-xl py-16 text-center" data-testid="history-hint">
+        <div className="bg-accent/10 text-accent mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl">
           <Database className="h-7 w-7" />
         </div>
-        <h1 className="font-display text-xl font-bold text-cream">
+        <h1 className="font-display text-cream text-xl font-bold">
           Listening history needs a database
         </h1>
-        <p className="mt-2 text-sm text-subtle leading-relaxed">
-          Sonalyze is running in browser storage mode. Set{" "}
-          <code className="rounded bg-elevated px-1.5 py-0.5 text-cream font-mono text-xs">DATABASE_URL</code> to a Postgres instance to record listening
-          snapshots, track trends over time, and tag tracks.
+        <p className="text-subtle mt-2 text-sm leading-relaxed">
+          Sonalyze is running in browser storage mode. Set{' '}
+          <code className="bg-elevated text-cream rounded px-1.5 py-0.5 font-mono text-xs">
+            DATABASE_URL
+          </code>{' '}
+          to a Postgres instance to record listening snapshots, track trends over time,
+          and tag tracks.
         </p>
       </div>
     );
@@ -116,10 +117,10 @@ export default function HistoryPage() {
       )}
 
       {latest && Array.isArray(latest.topArtists) && latest.topArtists.length > 0 && (
-        <section className="rounded-3xl border border-white/8 bg-panel/40 p-6 sm:p-8 backdrop-blur shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="h-5 w-5 text-accent" />
-            <h2 className="font-display text-lg font-bold text-cream">
+        <section className="bg-panel/40 rounded-3xl border border-white/8 p-6 shadow-sm backdrop-blur sm:p-8">
+          <div className="mb-4 flex items-center gap-2">
+            <TrendingUp className="text-accent h-5 w-5" />
+            <h2 className="font-display text-cream text-lg font-bold">
               Top artist rank over time (recent 4 weeks)
             </h2>
           </div>
@@ -132,22 +133,26 @@ export default function HistoryPage() {
                   className="flex items-center justify-between py-3 text-sm"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs text-subtle w-5">{idx + 1}.</span>
-                    <span className="font-medium text-cream">{a?.name ?? "Unknown Artist"}</span>
+                    <span className="text-subtle w-5 font-mono text-xs">{idx + 1}.</span>
+                    <span className="text-cream font-medium">
+                      {a?.name ?? 'Unknown Artist'}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2 font-mono text-xs text-accent">
+                  <div className="text-accent flex items-center gap-2 font-mono text-xs">
                     {ranks.length > 0
                       ? ranks.map((r, i) => (
                           <span
                             key={i}
-                            className={`px-2 py-0.5 rounded ${
-                              r > 0 ? "bg-accent/10 text-accent font-semibold" : "bg-elevated text-subtle"
+                            className={`rounded px-2 py-0.5 ${
+                              r > 0
+                                ? 'bg-accent/10 text-accent font-semibold'
+                                : 'bg-elevated text-subtle'
                             }`}
                           >
-                            {r > 0 ? `#${r}` : "–"}
+                            {r > 0 ? `#${r}` : '–'}
                           </span>
                         ))
-                      : "–"}
+                      : '–'}
                   </div>
                 </div>
               );
@@ -157,30 +162,32 @@ export default function HistoryPage() {
       )}
 
       {snapshots && snapshots.length > 0 && (
-        <section className="rounded-3xl border border-white/8 bg-panel/40 p-6 sm:p-8 backdrop-blur shadow-sm space-y-4">
+        <section className="bg-panel/40 space-y-4 rounded-3xl border border-white/8 p-6 shadow-sm backdrop-blur sm:p-8">
           <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-accent" />
-            <h2 className="font-display text-lg font-bold text-cream">Snapshots History</h2>
+            <Clock className="text-accent h-5 w-5" />
+            <h2 className="font-display text-cream text-lg font-bold">
+              Snapshots History
+            </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {snapshots.map((s) => {
               const tracksCount = Array.isArray(s.topTracks) ? s.topTracks.length : 0;
               const artistsCount = Array.isArray(s.topArtists) ? s.topArtists.length : 0;
               return (
                 <div
                   key={s.id}
-                  className="rounded-2xl border border-white/8 bg-elevated/60 p-4 space-y-2 hover:border-accent/30 transition-colors"
+                  className="bg-elevated/60 hover:border-accent/30 space-y-2 rounded-2xl border border-white/8 p-4 transition-colors"
                 >
-                  <p className="text-xs font-semibold text-cream">
+                  <p className="text-cream text-xs font-semibold">
                     {new Date(s.capturedAt).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
                     })}
                   </p>
-                  <div className="flex items-center gap-3 text-xs text-subtle">
+                  <div className="text-subtle flex items-center gap-3 text-xs">
                     <span>{tracksCount} tracks</span>
                     <span>•</span>
                     <span>{artistsCount} artists</span>

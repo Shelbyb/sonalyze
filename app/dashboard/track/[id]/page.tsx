@@ -4,14 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  ExternalLink,
-  Music,
-  Play,
-  Pause,
-  Wand2,
-} from 'lucide-react';
+import { ArrowLeft, ExternalLink, Music, Play, Pause, Wand2 } from 'lucide-react';
 import {
   Radar,
   RadarChart,
@@ -24,11 +17,7 @@ import type { SpotifyTrack, AudioFeatures } from '@/types/spotify';
 import { LoadingState, ErrorState } from '@/components/StateViews';
 import { useAudioPlayer, useSpotifyToken } from '@/hooks';
 import EqBars from '@/components/EqBars';
-import {
-  AUDIO_STAT_DEFINITIONS,
-  formatMusicalKey,
-  getCamelotKey,
-} from '@/lib/music';
+import { AUDIO_STAT_DEFINITIONS, formatMusicalKey, getCamelotKey } from '@/lib/music';
 
 export default function TrackDetailPage() {
   const { token } = useSpotifyToken();
@@ -79,14 +68,14 @@ export default function TrackDetailPage() {
     <div className="space-y-8">
       <Link
         href="/dashboard/top-tracks"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-cream transition-colors"
+        className="text-muted hover:text-cream inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
       >
         <ArrowLeft className="h-4 w-4" /> Back to Tracks
       </Link>
 
       {/* Hero Track Card */}
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-end rounded-3xl border border-white/8 bg-panel/50 p-6 sm:p-8 backdrop-blur">
-        <div className="group relative h-44 w-44 shrink-0 overflow-hidden rounded-2xl bg-elevated2 shadow-2xl ring-1 ring-white/10">
+      <div className="bg-panel/50 flex flex-col gap-6 rounded-3xl border border-white/8 p-6 backdrop-blur sm:flex-row sm:items-end sm:p-8">
+        <div className="group bg-elevated2 relative h-44 w-44 shrink-0 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
           {img && (
             <Image
               src={img}
@@ -101,13 +90,13 @@ export default function TrackDetailPage() {
             <button
               onClick={() => playTrack(track)}
               aria-label={isCurrentPlaying ? 'Pause preview' : 'Play 30s preview'}
-              className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]"
+              className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent text-black shadow-lg transition-transform hover:scale-110">
+              <div className="bg-accent flex h-14 w-14 items-center justify-center rounded-full text-black shadow-lg transition-transform hover:scale-110">
                 {isCurrentPlaying ? (
                   <Pause className="h-6 w-6 fill-black" />
                 ) : (
-                  <Play className="h-6 w-6 fill-black ml-1" />
+                  <Play className="ml-1 h-6 w-6 fill-black" />
                 )}
               </div>
             </button>
@@ -116,36 +105,41 @@ export default function TrackDetailPage() {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            <span className="text-accent text-xs font-semibold tracking-[0.2em] uppercase">
               Track Analysis
             </span>
             {isCurrentPlaying && <EqBars className="text-accent" />}
           </div>
-          <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl text-cream truncate">
+          <h1 className="font-display text-cream mt-1 truncate text-3xl font-bold tracking-tight sm:text-4xl">
             {track.name}
           </h1>
-          <p className="mt-2 text-base text-muted truncate">
-            {track.artists.map((a) => a.name).join(', ')} · <span className="text-subtle">{track.album.name}</span>
+          <p className="text-muted mt-2 truncate text-base">
+            {track.artists.map((a) => a.name).join(', ')} ·{' '}
+            <span className="text-subtle">{track.album.name}</span>
           </p>
 
           <div className="mt-5 flex flex-wrap items-center gap-3 text-xs">
             {track.preview_url ? (
               <button
                 onClick={() => playTrack(track)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-1.5 font-semibold text-black transition-transform hover:scale-105 active:scale-95 shadow-md shadow-accent/20"
+                className="bg-accent shadow-accent/20 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 font-semibold text-black shadow-md transition-transform hover:scale-105 active:scale-95"
               >
-                {isCurrentPlaying ? <Pause className="h-3.5 w-3.5 fill-black" /> : <Play className="h-3.5 w-3.5 fill-black" />}
+                {isCurrentPlaying ? (
+                  <Pause className="h-3.5 w-3.5 fill-black" />
+                ) : (
+                  <Play className="h-3.5 w-3.5 fill-black" />
+                )}
                 <span>{isCurrentPlaying ? 'Pause 30s Preview' : 'Play 30s Preview'}</span>
               </button>
             ) : (
-              <span className="rounded-full bg-elevated px-3 py-1.5 text-subtle">
+              <span className="bg-elevated text-subtle rounded-full px-3 py-1.5">
                 Preview unavailable
               </span>
             )}
 
             <Link
               href="/dashboard/discover"
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-elevated px-3.5 py-1.5 font-medium text-cream hover:border-accent/40 hover:text-accent transition-colors"
+              className="bg-elevated text-cream hover:border-accent/40 hover:text-accent inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3.5 py-1.5 font-medium transition-colors"
             >
               <Wand2 className="h-3.5 w-3.5" />
               <span>Generate Mix from this Vibe</span>
@@ -155,7 +149,7 @@ export default function TrackDetailPage() {
               href={track.external_urls.spotify}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-elevated px-3.5 py-1.5 font-medium text-muted hover:text-cream transition-colors"
+              className="bg-elevated text-muted hover:text-cream inline-flex items-center gap-1 rounded-full border border-white/10 px-3.5 py-1.5 font-medium transition-colors"
             >
               <span>Spotify</span>
               <ExternalLink className="h-3 w-3" />
@@ -165,11 +159,14 @@ export default function TrackDetailPage() {
       </div>
 
       {featuresUnavailable && (
-        <div className="rounded-2xl border border-white/8 bg-panel/40 p-8 text-center">
-          <Music className="mx-auto mb-3 h-6 w-6 text-subtle" />
-          <p className="text-sm font-medium text-cream">Audio DNA features aren't available for this track</p>
-          <p className="mx-auto mt-2 max-w-md text-xs text-muted">
-            Spotify restricts the audio-features endpoint on standard developer apps. When extended API access is granted, these radar metrics populate in real-time.
+        <div className="bg-panel/40 rounded-2xl border border-white/8 p-8 text-center">
+          <Music className="text-subtle mx-auto mb-3 h-6 w-6" />
+          <p className="text-cream text-sm font-medium">
+            Audio DNA features aren't available for this track
+          </p>
+          <p className="text-muted mx-auto mt-2 max-w-md text-xs">
+            Spotify restricts the audio-features endpoint on standard developer apps. When
+            extended API access is granted, these radar metrics populate in real-time.
           </p>
         </div>
       )}
@@ -177,8 +174,8 @@ export default function TrackDetailPage() {
       {features && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Audio DNA Radar Chart */}
-          <div className="rounded-2xl border border-white/8 bg-panel/40 p-6 shadow-sm">
-            <h2 className="mb-4 font-display text-sm font-semibold tracking-tight text-cream">
+          <div className="bg-panel/40 rounded-2xl border border-white/8 p-6 shadow-sm">
+            <h2 className="font-display text-cream mb-4 text-sm font-semibold tracking-tight">
               Audio DNA Radar
             </h2>
             <div className="h-72 w-full">
@@ -201,25 +198,25 @@ export default function TrackDetailPage() {
           </div>
 
           {/* Breakdown Progress Bars & Harmonic Details */}
-          <div className="rounded-2xl border border-white/8 bg-panel/40 p-6 shadow-sm flex flex-col justify-between">
+          <div className="bg-panel/40 flex flex-col justify-between rounded-2xl border border-white/8 p-6 shadow-sm">
             <div>
-              <h2 className="mb-4 font-display text-sm font-semibold tracking-tight text-cream">
+              <h2 className="font-display text-cream mb-4 text-sm font-semibold tracking-tight">
                 Audio Metrics Breakdown
               </h2>
               <div className="space-y-3.5">
                 {AUDIO_STAT_DEFINITIONS.map(({ key, label, hint }) => (
                   <div key={key}>
                     <div className="mb-1 flex items-baseline justify-between">
-                      <span className="text-xs font-medium text-cream" title={hint}>
+                      <span className="text-cream text-xs font-medium" title={hint}>
                         {label}
                       </span>
-                      <span className="text-xs font-mono text-accent">
+                      <span className="text-accent font-mono text-xs">
                         {Math.round((features[key] as number) * 100)}%
                       </span>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-elevated2">
+                    <div className="bg-elevated2 h-1.5 w-full overflow-hidden rounded-full">
                       <div
-                        className="h-full rounded-full bg-accent transition-all duration-500"
+                        className="bg-accent h-full rounded-full transition-all duration-500"
                         style={{ width: `${(features[key] as number) * 100}%` }}
                       />
                     </div>
@@ -230,28 +227,32 @@ export default function TrackDetailPage() {
 
             {/* Tempo, Key, Camelot & Loudness Grid */}
             <div className="mt-6 grid grid-cols-4 gap-2 border-t border-white/8 pt-5 text-center">
-              <div className="rounded-xl bg-elevated/60 p-2.5">
-                <p className="text-[10px] uppercase font-semibold text-subtle">Tempo</p>
-                <p className="font-display text-base font-bold text-cream mt-0.5">
-                  {Math.round(features.tempo)} <span className="text-[10px] text-muted">BPM</span>
+              <div className="bg-elevated/60 rounded-xl p-2.5">
+                <p className="text-subtle text-[10px] font-semibold uppercase">Tempo</p>
+                <p className="font-display text-cream mt-0.5 text-base font-bold">
+                  {Math.round(features.tempo)}{' '}
+                  <span className="text-muted text-[10px]">BPM</span>
                 </p>
               </div>
-              <div className="rounded-xl bg-elevated/60 p-2.5">
-                <p className="text-[10px] uppercase font-semibold text-subtle">Key</p>
-                <p className="font-display text-base font-bold text-cream mt-0.5">
+              <div className="bg-elevated/60 rounded-xl p-2.5">
+                <p className="text-subtle text-[10px] font-semibold uppercase">Key</p>
+                <p className="font-display text-cream mt-0.5 text-base font-bold">
                   {keyText}
                 </p>
               </div>
-              <div className="rounded-xl bg-elevated/60 p-2.5">
-                <p className="text-[10px] uppercase font-semibold text-subtle">Camelot</p>
-                <p className="font-display text-base font-bold text-accent mt-0.5">
+              <div className="bg-elevated/60 rounded-xl p-2.5">
+                <p className="text-subtle text-[10px] font-semibold uppercase">Camelot</p>
+                <p className="font-display text-accent mt-0.5 text-base font-bold">
                   {camelotKey ?? '—'}
                 </p>
               </div>
-              <div className="rounded-xl bg-elevated/60 p-2.5">
-                <p className="text-[10px] uppercase font-semibold text-subtle">Loudness</p>
-                <p className="font-display text-base font-bold text-cream mt-0.5">
-                  {features.loudness.toFixed(1)} <span className="text-[10px] text-muted">dB</span>
+              <div className="bg-elevated/60 rounded-xl p-2.5">
+                <p className="text-subtle text-[10px] font-semibold uppercase">
+                  Loudness
+                </p>
+                <p className="font-display text-cream mt-0.5 text-base font-bold">
+                  {features.loudness.toFixed(1)}{' '}
+                  <span className="text-muted text-[10px]">dB</span>
                 </p>
               </div>
             </div>

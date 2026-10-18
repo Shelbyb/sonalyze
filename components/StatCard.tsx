@@ -17,27 +17,27 @@ export default function StatCard({
   badge,
 }: StatCardProps) {
   return (
-    <div className="flex flex-col justify-between rounded-2xl border border-white/8 bg-panel/50 p-5 transition-all duration-300 hover:border-white/15 hover:bg-panel">
+    <div className="bg-panel/50 hover:bg-panel flex flex-col justify-between rounded-2xl border border-white/8 p-5 transition-all duration-300 hover:border-white/15">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-[0.1em] text-muted">
+        <span className="text-muted text-xs font-semibold tracking-[0.1em] uppercase">
           {title}
         </span>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 text-accent">
+        <div className="bg-accent/10 text-accent flex h-8 w-8 items-center justify-center rounded-lg">
           <Icon className="h-4 w-4" />
         </div>
       </div>
       <div className="mt-4">
         <div className="flex items-baseline gap-2">
-          <span className="font-display text-2xl font-bold tracking-tight text-cream">
+          <span className="font-display text-cream text-2xl font-bold tracking-tight">
             {value}
           </span>
           {badge && (
-            <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">
+            <span className="bg-accent/15 text-accent rounded-full px-2 py-0.5 text-[10px] font-semibold">
               {badge}
             </span>
           )}
         </div>
-        {subtitle && <p className="mt-1 text-xs text-subtle truncate">{subtitle}</p>}
+        {subtitle && <p className="text-subtle mt-1 truncate text-xs">{subtitle}</p>}
       </div>
     </div>
   );

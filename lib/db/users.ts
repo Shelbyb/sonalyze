@@ -1,5 +1,5 @@
-import { users } from "./schema";
-import type { getDb } from "./client";
+import { users } from './schema';
+import type { getDb } from './client';
 
 export async function ensureUser(
   db: NonNullable<ReturnType<typeof getDb>>,

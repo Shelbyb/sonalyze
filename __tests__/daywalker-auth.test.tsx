@@ -10,9 +10,7 @@ import {
 } from '@/lib/encryption';
 import {
   Daywalker,
-  createDaywalker,
   DaywalkerAuthError,
-  DaywalkerRateLimitError,
   validateServiceToken,
   requireServiceAuth,
   getServiceLicense,
@@ -22,9 +20,6 @@ import {
   deriveRuntimeSecret,
   clearServiceAuthCache,
   clearLicenseCache,
-  ServiceAuthError,
-  getDaywalkerClient,
-  getClient,
   getResolvedServiceApiKey,
   getDaywalkerAuthUrl,
   getDaywalkerServiceSlug,
@@ -167,7 +162,9 @@ describe('Daywalker Auth SDK Integration (lib/daywalker-auth.ts)', () => {
 
   it('handles network failure failing closed with status 503', async () => {
     const fakeClient = {
-      validateServiceCredentials: vi.fn().mockRejectedValue(new Error('Network connection refused')),
+      validateServiceCredentials: vi
+        .fn()
+        .mockRejectedValue(new Error('Network connection refused')),
     } as unknown as Daywalker;
 
     const result = await validateServiceToken({ client: fakeClient });
@@ -196,7 +193,9 @@ describe('Daywalker Auth SDK Integration (lib/daywalker-auth.ts)', () => {
       }),
     } as unknown as Daywalker;
 
-    await expect(requireServiceAuth({ client: invalidClient })).rejects.toThrow(DaywalkerAuthError);
+    await expect(requireServiceAuth({ client: invalidClient })).rejects.toThrow(
+      DaywalkerAuthError,
+    );
   });
 
   it('getServiceLicense and requireServiceLicense fetch, cache, and derive runtime secret', async () => {
@@ -250,7 +249,11 @@ describe('Daywalker Auth SDK Integration (lib/daywalker-auth.ts)', () => {
 
   it('getServiceLicense handles SERVICE_REVOKED with status 403 and code kept', async () => {
     const fakeClient = {
-      getLicense: vi.fn().mockRejectedValue(new DaywalkerAuthError('Service revoked', 403, 'SERVICE_REVOKED')),
+      getLicense: vi
+        .fn()
+        .mockRejectedValue(
+          new DaywalkerAuthError('Service revoked', 403, 'SERVICE_REVOKED'),
+        ),
       fetchBundle: vi.fn().mockResolvedValue({}),
     } as unknown as Daywalker;
 
@@ -259,12 +262,16 @@ describe('Daywalker Auth SDK Integration (lib/daywalker-auth.ts)', () => {
     expect(res.status).toBe(403);
     expect(res.code).toBe('SERVICE_REVOKED');
 
-    await expect(requireServiceLicense({ client: fakeClient, forceRefresh: true })).rejects.toThrow(DaywalkerAuthError);
+    await expect(
+      requireServiceLicense({ client: fakeClient, forceRefresh: true }),
+    ).rejects.toThrow(DaywalkerAuthError);
   });
 
   it('getServiceLicense handles network error mapping to status 503', async () => {
     const fakeClient = {
-      getLicense: vi.fn().mockRejectedValue(new Error('Network error connecting to auth.daywalker.dev')),
+      getLicense: vi
+        .fn()
+        .mockRejectedValue(new Error('Network error connecting to auth.daywalker.dev')),
       fetchBundle: vi.fn().mockResolvedValue({}),
     } as unknown as Daywalker;
 
@@ -287,7 +294,8 @@ describe('Diagnostic Service Error Page (app/service-error/page.tsx)', () => {
     delete (window as any).location;
     window.location = {
       ...originalLocation,
-      search: '?error=InvalidToken&message=Token%20is%20expired&status=401&from=%2Fdashboard',
+      search:
+        '?error=InvalidToken&message=Token%20is%20expired&status=401&from=%2Fdashboard',
       href: 'http://localhost:3000/service-error?error=InvalidToken&message=Token%20is%20expired&status=401&from=%2Fdashboard',
     } as any;
 

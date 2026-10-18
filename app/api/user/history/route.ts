@@ -1,18 +1,18 @@
-import { NextResponse } from "next/server";
-import { and, desc, eq, gt } from "drizzle-orm";
-import { listeningSnapshots } from "@/lib/db/schema";
-import { ensureUser } from "@/lib/db/users";
-import { requireUserDb } from "@/lib/storage/server";
+import { NextResponse } from 'next/server';
+import { and, desc, eq, gt } from 'drizzle-orm';
+import { listeningSnapshots } from '@/lib/db/schema';
+import { ensureUser } from '@/lib/db/users';
+import { requireUserDb } from '@/lib/storage/server';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export const SNAPSHOT_THROTTLE_MS = 6 * 60 * 60 * 1000;
-const RANGES = ["short_term", "medium_term", "long_term"];
+const RANGES = ['short_term', 'medium_term', 'long_term'];
 
 export async function GET(request: Request) {
   const ctx = await requireUserDb();
-  if ("error" in ctx) return ctx.error;
-  const range = new URL(request.url).searchParams.get("timeRange");
+  if ('error' in ctx) return ctx.error;
+  const range = new URL(request.url).searchParams.get('timeRange');
   const where =
     range && RANGES.includes(range)
       ? and(
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const ctx = await requireUserDb();
-  if ("error" in ctx) return ctx.error;
+  if ('error' in ctx) return ctx.error;
   const body = await request.json().catch(() => null);
   const timeRange = body?.timeRange;
   if (
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     !Array.isArray(body?.topTracks) ||
     !Array.isArray(body?.topArtists)
   ) {
-    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
   }
   await ensureUser(ctx.db, ctx.spotifyId);
   const since = new Date(Date.now() - SNAPSHOT_THROTTLE_MS);
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     )
     .limit(1);
   if (recent.length > 0) {
-    return NextResponse.json({ recorded: false, reason: "throttled" });
+    return NextResponse.json({ recorded: false, reason: 'throttled' });
   }
   await ctx.db.insert(listeningSnapshots).values({
     spotifyId: ctx.spotifyId,

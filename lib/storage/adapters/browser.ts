@@ -1,4 +1,4 @@
-import type { StorageAdapter } from "./types";
+import type { StorageAdapter } from './types';
 
 /**
  * Browser adapter: persistence is handled by the Zustand `persist` middleware

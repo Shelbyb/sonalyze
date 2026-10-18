@@ -1,9 +1,10 @@
-import type { StorageAdapter } from "./types";
+import { fetchWithRetry } from '@/lib/fetch-retry';
+import type { StorageAdapter } from './types';
 
 async function request(path: string, init?: RequestInit) {
-  const res = await fetch(path, {
+  const res = await fetchWithRetry(path, {
     ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
   });
   if (!res.ok) throw new Error(`Storage API ${path} failed: ${res.status}`);
   return res.json();
@@ -11,19 +12,19 @@ async function request(path: string, init?: RequestInit) {
 
 export const apiAdapter: StorageAdapter = {
   async loadUser() {
-    const data = await request("/api/user/preferences");
+    const data = await request('/api/user/preferences');
     return { user: data.user ?? null, preferences: data.preferences ?? null };
   },
   async saveUser(user) {
     if (!user) return;
-    await request("/api/user/preferences", {
-      method: "PUT",
+    await request('/api/user/preferences', {
+      method: 'PUT',
       body: JSON.stringify({ user }),
     });
   },
   async savePreferences(preferences) {
-    await request("/api/user/preferences", {
-      method: "PUT",
+    await request('/api/user/preferences', {
+      method: 'PUT',
       body: JSON.stringify({ preferences }),
     });
   },

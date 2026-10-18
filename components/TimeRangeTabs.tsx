@@ -17,14 +17,14 @@ export default function TimeRangeTabs({
   onChange: (value: TimeRange) => void;
 }) {
   return (
-    <div className="inline-flex rounded-full border border-white/8 bg-panel/60 p-1">
+    <div className="bg-panel/60 inline-flex rounded-full border border-white/8 p-1">
       {options.map((opt) => (
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
           className={clsx(
             'rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:text-sm',
-            value === opt.value ? 'bg-accent text-black' : 'text-muted hover:text-cream'
+            value === opt.value ? 'bg-accent text-black' : 'text-muted hover:text-cream',
           )}
         >
           {opt.label}

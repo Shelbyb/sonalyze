@@ -13,16 +13,12 @@ import {
   getTopTracks,
   getRecentlyPlayed,
   getTrack,
-  getSeveralTracks,
   searchTracks,
   searchTrack,
   getAudioFeatures,
   getSeveralAudioFeatures,
   getUserPlaylists,
-  getPlaylistTracks,
   getRecommendations,
-  createPlaylist,
-  addTracksToPlaylist,
   createPlaylistWithTracks,
   getAvailableGenreSeeds,
   SpotifyApiError,
@@ -68,7 +64,7 @@ describe('Spotify API Client & Cache Layer', () => {
         ok: false,
         status: 403,
         text: async () => 'Forbidden: Extended API access required',
-      })
+      }),
     );
 
     let error: any;
@@ -160,7 +156,7 @@ describe('Spotify API Client & Cache Layer', () => {
       'user-1',
       'My New Playlist',
       'Test description',
-      ['spotify:track:t1', 'spotify:track:t2']
+      ['spotify:track:t1', 'spotify:track:t2'],
     );
 
     expect(playlist.id).toBe('p123');
@@ -173,7 +169,9 @@ describe('Spotify API Client & Cache Layer', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: async () => ({ items: [{ played_at: '2026-10-09T10:00:00Z', track: { id: 't1' } }] }),
+          json: async () => ({
+            items: [{ played_at: '2026-10-09T10:00:00Z', track: { id: 't1' } }],
+          }),
         });
       }
       if (url.includes('/recommendations/available-genre-seeds')) {
@@ -264,7 +262,11 @@ describe('Spotify API Client & Cache Layer', () => {
     const searchRes = await searchTracks('token', 'Radiohead Kid A');
     expect(searchRes.tracks.items[0].id).toBe('found1');
 
-    const singleTrack = await searchTrack('token', 'Everything In Its Right Place', 'Radiohead');
+    const singleTrack = await searchTrack(
+      'token',
+      'Everything In Its Right Place',
+      'Radiohead',
+    );
     expect(singleTrack?.id).toBe('found1');
   });
 
@@ -374,7 +376,10 @@ describe('Spotify API Client & Cache Layer', () => {
           status: 200,
           json: async () => ({
             toptags: {
-              tag: [{ name: 'electronic', count: 100 }, { name: 'dance', count: 90 }],
+              tag: [
+                { name: 'electronic', count: 100 },
+                { name: 'dance', count: 90 },
+              ],
             },
           }),
         });

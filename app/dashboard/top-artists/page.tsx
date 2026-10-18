@@ -61,7 +61,7 @@ export default function TopArtistsPage() {
       result = result.filter(
         (a) =>
           a.name.toLowerCase().includes(q) ||
-          a.genres?.some((g) => g.toLowerCase().includes(q))
+          a.genres?.some((g) => g.toLowerCase().includes(q)),
       );
     }
 
@@ -100,31 +100,37 @@ export default function TopArtistsPage() {
       {/* Control Bar: Search & Sort */}
       {artists && artists.length > 0 && (
         <div className="space-y-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/8 bg-panel/30 p-3 backdrop-blur">
+          <div className="bg-panel/30 flex flex-col gap-3 rounded-2xl border border-white/8 p-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             {/* Search Input */}
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+            <div className="relative max-w-sm flex-1">
+              <Search className="text-subtle absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search artists or genres…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl border border-white/8 bg-elevated/80 pl-9 pr-3 py-1.5 text-xs text-cream placeholder-subtle outline-none focus:border-accent/40"
+                className="bg-elevated/80 text-cream placeholder-subtle focus:border-accent/40 w-full rounded-xl border border-white/8 py-1.5 pr-3 pl-9 text-xs outline-none"
               />
             </div>
 
             {/* Sort */}
-            <div className="flex items-center gap-1.5 rounded-xl border border-white/8 bg-elevated/80 px-2.5 py-1 text-xs text-muted">
-              <SlidersHorizontal className="h-3.5 w-3.5 text-subtle" />
+            <div className="bg-elevated/80 text-muted flex items-center gap-1.5 rounded-xl border border-white/8 px-2.5 py-1 text-xs">
+              <SlidersHorizontal className="text-subtle h-3.5 w-3.5" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 aria-label="Sort artists by"
-                className="bg-transparent text-xs text-cream outline-none cursor-pointer"
+                className="text-cream cursor-pointer bg-transparent text-xs outline-none"
               >
-                <option value="rank" className="bg-panel text-cream">Sort: Rank</option>
-                <option value="name" className="bg-panel text-cream">Sort: Name</option>
-                <option value="popularity" className="bg-panel text-cream">Sort: Popularity</option>
+                <option value="rank" className="bg-panel text-cream">
+                  Sort: Rank
+                </option>
+                <option value="name" className="bg-panel text-cream">
+                  Sort: Name
+                </option>
+                <option value="popularity" className="bg-panel text-cream">
+                  Sort: Popularity
+                </option>
               </select>
             </div>
           </div>
@@ -132,12 +138,14 @@ export default function TopArtistsPage() {
           {/* Genre Filter Pills */}
           {topGenres.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 px-1">
-              <span className="text-[11px] font-semibold text-subtle uppercase mr-1">Filter Genre:</span>
+              <span className="text-subtle mr-1 text-[11px] font-semibold uppercase">
+                Filter Genre:
+              </span>
               <button
                 onClick={() => setSelectedGenre(null)}
                 className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
                   selectedGenre === null
-                    ? 'bg-accent text-black font-semibold'
+                    ? 'bg-accent font-semibold text-black'
                     : 'bg-elevated text-muted hover:text-cream'
                 }`}
               >
@@ -149,7 +157,7 @@ export default function TopArtistsPage() {
                   onClick={() => setSelectedGenre(selectedGenre === g ? null : g)}
                   className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize transition-colors ${
                     selectedGenre === g
-                      ? 'bg-accent text-black font-semibold'
+                      ? 'bg-accent font-semibold text-black'
                       : 'bg-elevated text-muted hover:text-cream'
                   }`}
                 >
@@ -184,7 +192,9 @@ export default function TopArtistsPage() {
             <ArtistCard
               key={a.id}
               artist={a}
-              rank={sortBy === 'rank' ? (artists ? artists.indexOf(a) + 1 : i + 1) : undefined}
+              rank={
+                sortBy === 'rank' ? (artists ? artists.indexOf(a) + 1 : i + 1) : undefined
+              }
             />
           ))}
         </div>

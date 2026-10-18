@@ -14,7 +14,12 @@ import {
   Cell,
 } from 'recharts';
 import { Share2, Check, Sparkles, Activity } from 'lucide-react';
-import { getTopArtists, getTopTracks, getSeveralAudioFeatures, SpotifyApiError } from '@/lib/spotify';
+import {
+  getTopArtists,
+  getTopTracks,
+  getSeveralAudioFeatures,
+  SpotifyApiError,
+} from '@/lib/spotify';
 import type { TimeRange } from '@/types/spotify';
 import PageHeader from '@/components/PageHeader';
 import TimeRangeTabs from '@/components/TimeRangeTabs';
@@ -38,8 +43,12 @@ export default function TasteProfilePage() {
   const defaultRange = useUserStore((s) => s.preferences.defaultTimeRange);
   const setDefaultTimeRange = useUserStore((s) => s.setDefaultTimeRange);
   const [range, setRange] = useState<TimeRange>(defaultRange);
-  const [genreData, setGenreData] = useState<{ genre: string; count: number }[] | null>(null);
-  const [radarData, setRadarData] = useState<{ stat: string; value: number }[] | null>(null);
+  const [genreData, setGenreData] = useState<{ genre: string; count: number }[] | null>(
+    null,
+  );
+  const [radarData, setRadarData] = useState<{ stat: string; value: number }[] | null>(
+    null,
+  );
   const [featuresUnavailable, setFeaturesUnavailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -71,7 +80,9 @@ export default function TasteProfilePage() {
       .then(async (res) => {
         const ids = res.items.map((t) => t.id);
         const { audio_features } = await getSeveralAudioFeatures(token, ids);
-        const valid = audio_features.filter(Boolean) as NonNullable<typeof audio_features[number]>[];
+        const valid = audio_features.filter(Boolean) as NonNullable<
+          (typeof audio_features)[number]
+        >[];
         if (valid.length === 0) {
           setFeaturesUnavailable(true);
           return;
@@ -79,7 +90,7 @@ export default function TasteProfilePage() {
         const avg = FEATURE_KEYS.map(({ key, label }) => ({
           stat: label,
           value: Math.round(
-            (valid.reduce((sum, f) => sum + (f as any)[key], 0) / valid.length) * 100
+            (valid.reduce((sum, f) => sum + (f as any)[key], 0) / valid.length) * 100,
           ),
         }));
         setRadarData(avg);
@@ -133,13 +144,16 @@ export default function TasteProfilePage() {
 
   const handleCopySummary = () => {
     if (!genreData || !genreData.length) return;
-    const topGenreList = genreData.slice(0, 3).map((g) => g.genre).join(', ');
+    const topGenreList = genreData
+      .slice(0, 3)
+      .map((g) => g.genre)
+      .join(', ');
     const rangeName =
       range === 'short_term'
         ? 'Last 4 Weeks'
         : range === 'medium_term'
-        ? 'Last 6 Months'
-        : 'All Time';
+          ? 'Last 6 Months'
+          : 'All Time';
     const text = `🎧 My Sonalyze Taste Profile (${rangeName}):\n• Top Genres: ${topGenreList}\n${
       archetype ? `• Sonic Archetype: ${archetype.title}\n` : ''
     }Generated with Sonalyze`;
@@ -169,28 +183,30 @@ export default function TasteProfilePage() {
 
       {/* Archetype banner */}
       {archetype && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-accent/30 bg-accent/5 p-6 backdrop-blur">
+        <div className="border-accent/30 bg-accent/5 flex flex-col justify-between gap-4 rounded-2xl border p-6 backdrop-blur sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-black shrink-0">
+            <div className="bg-accent flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-black">
               <Sparkles className="h-6 w-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.1em] text-accent">
+                <span className="text-accent text-xs font-semibold tracking-[0.1em] uppercase">
                   Sonic Archetype
                 </span>
               </div>
-              <h3 className="font-display text-lg font-bold text-cream">{archetype.title}</h3>
-              <p className="text-xs text-muted mt-0.5">{archetype.desc}</p>
+              <h3 className="font-display text-cream text-lg font-bold">
+                {archetype.title}
+              </h3>
+              <p className="text-muted mt-0.5 text-xs">{archetype.desc}</p>
             </div>
           </div>
           <button
             onClick={handleCopySummary}
-            className="inline-flex items-center gap-2 self-start sm:self-center rounded-xl border border-white/10 bg-elevated px-3.5 py-2 text-xs font-semibold text-cream hover:border-accent/40 hover:text-accent transition-colors"
+            className="bg-elevated text-cream hover:border-accent/40 hover:text-accent inline-flex items-center gap-2 self-start rounded-xl border border-white/10 px-3.5 py-2 text-xs font-semibold transition-colors sm:self-center"
           >
             {copied ? (
               <>
-                <Check className="h-3.5 w-3.5 text-accent" />
+                <Check className="text-accent h-3.5 w-3.5" />
                 <span>Copied!</span>
               </>
             ) : (
@@ -205,18 +221,24 @@ export default function TasteProfilePage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Top Genres Bar Chart */}
-        <div className="rounded-2xl border border-white/8 bg-panel/40 p-6 shadow-sm">
-          <h2 className="mb-4 font-display text-sm font-semibold tracking-tight text-cream flex items-center justify-between">
+        <div className="bg-panel/40 rounded-2xl border border-white/8 p-6 shadow-sm">
+          <h2 className="font-display text-cream mb-4 flex items-center justify-between text-sm font-semibold tracking-tight">
             <span>Top genres</span>
             {genreData && genreData.length > 0 && (
-              <span className="text-xs text-subtle font-normal">Ranked by artist frequency</span>
+              <span className="text-subtle text-xs font-normal">
+                Ranked by artist frequency
+              </span>
             )}
           </h2>
           {!genreData && !error && <LoadingState label="Analyzing top genres" />}
           {genreData && genreData.length > 0 && (
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={genreData} layout="vertical" margin={{ left: 8, right: 16 }}>
+                <BarChart
+                  data={genreData}
+                  layout="vertical"
+                  margin={{ left: 8, right: 16 }}
+                >
                   <XAxis type="number" hide />
                   <YAxis
                     type="category"
@@ -236,26 +258,29 @@ export default function TasteProfilePage() {
             </div>
           )}
           {genreData && genreData.length === 0 && (
-            <p className="py-10 text-center text-sm text-muted">
+            <p className="text-muted py-10 text-center text-sm">
               Not enough genre data yet — keep listening and check back.
             </p>
           )}
         </div>
 
         {/* Average Sound Radar Chart */}
-        <div className="rounded-2xl border border-white/8 bg-panel/40 p-6 shadow-sm">
-          <h2 className="mb-4 font-display text-sm font-semibold tracking-tight text-cream flex items-center justify-between">
+        <div className="bg-panel/40 rounded-2xl border border-white/8 p-6 shadow-sm">
+          <h2 className="font-display text-cream mb-4 flex items-center justify-between text-sm font-semibold tracking-tight">
             <span>Audio DNA fingerprint</span>
-            <span className="text-xs text-subtle font-normal">Averaged across top tracks</span>
+            <span className="text-subtle text-xs font-normal">
+              Averaged across top tracks
+            </span>
           </h2>
           {featuresUnavailable && (
-            <div className="py-12 text-center space-y-2">
-              <Activity className="mx-auto h-6 w-6 text-subtle" />
-              <p className="text-sm font-medium text-cream">
+            <div className="space-y-2 py-12 text-center">
+              <Activity className="text-subtle mx-auto h-6 w-6" />
+              <p className="text-cream text-sm font-medium">
                 Audio feature data is currently restricted by Spotify Developer tier.
               </p>
-              <p className="max-w-xs mx-auto text-xs text-muted">
-                If your Spotify App has extended API access, radar metrics will populate automatically.
+              <p className="text-muted mx-auto max-w-xs text-xs">
+                If your Spotify App has extended API access, radar metrics will populate
+                automatically.
               </p>
             </div>
           )}
@@ -267,7 +292,10 @@ export default function TasteProfilePage() {
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={radarData} outerRadius="75%">
                   <PolarGrid stroke="#282828" />
-                  <PolarAngleAxis dataKey="stat" tick={{ fill: '#a7a7a7', fontSize: 11 }} />
+                  <PolarAngleAxis
+                    dataKey="stat"
+                    tick={{ fill: '#a7a7a7', fontSize: 11 }}
+                  />
                   <Radar
                     dataKey="value"
                     stroke="#1ed760"

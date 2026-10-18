@@ -1,8 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import { useCapabilities } from "@/hooks/useCapabilities";
-import type { SpotifyArtist, SpotifyTrack, TimeRange } from "@/types/spotify";
+import { useEffect, useRef } from 'react';
+import { useCapabilities } from '@/hooks/useCapabilities';
+import type { SpotifyArtist, SpotifyTrack, TimeRange } from '@/types/spotify';
+import { fetchWithRetry } from '@/lib/fetch-retry';
 
 /** Records a listening snapshot when history is enabled. The server throttles duplicates. */
 export default function SnapshotRecorder({
@@ -34,8 +35,8 @@ export default function SnapshotRecorder({
         popularity: a.popularity,
       })),
     };
-    fetch("/api/user/history", {
-      method: "POST",
+    fetchWithRetry('/api/user/history', {
+      method: 'POST',
       body: JSON.stringify({ timeRange, ...slim }),
     }).catch(() => {});
   }, [history, tracks, artists, timeRange]);

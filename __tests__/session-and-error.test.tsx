@@ -7,7 +7,8 @@ import ErrorPage from '@/app/error/page';
 import * as nextAuthReact from 'next-auth/react';
 
 vi.mock('next-auth/react', async () => {
-  const actual = await vi.importActual<typeof import('next-auth/react')>('next-auth/react');
+  const actual =
+    await vi.importActual<typeof import('next-auth/react')>('next-auth/react');
   return {
     ...actual,
     useSession: vi.fn(),
@@ -129,7 +130,9 @@ describe('SessionExpiryWarning Component', () => {
     });
 
     render(<SessionExpiryWarning />);
-    expect(nextAuthReact.signOut).toHaveBeenCalledWith({ callbackUrl: '/?error=SessionExpired' });
+    expect(nextAuthReact.signOut).toHaveBeenCalledWith({
+      callbackUrl: '/?error=SessionExpired',
+    });
   });
 });
 
@@ -145,12 +148,7 @@ describe('ErrorBoundary Component', () => {
 
   it('renders generic error view for application exceptions', () => {
     const resetMock = vi.fn();
-    render(
-      <ErrorBoundary
-        error={new Error('Failed to fetch data')}
-        reset={resetMock}
-      />
-    );
+    render(<ErrorBoundary error={new Error('Failed to fetch data')} reset={resetMock} />);
 
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
     expect(screen.getByText('Failed to fetch data')).toBeInTheDocument();
@@ -189,7 +187,9 @@ describe('ErrorPage (/error route)', () => {
   it('renders error page and handles session errors with login button', () => {
     render(<ErrorPage />);
 
-    expect(screen.getByText(/Session Error|Authentication Error|Authentication Required/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Session Error|Authentication Error|Authentication Required/i),
+    ).toBeInTheDocument();
     expect(screen.getByText('Go to Login')).toBeInTheDocument();
 
     const loginBtn = screen.getByText('Go to Login');

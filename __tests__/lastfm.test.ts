@@ -109,7 +109,10 @@ describe('Last.fm Client & Acoustic Intelligence', () => {
           status: 200,
           json: async () => ({
             toptags: {
-              tag: [{ name: 'electronic', count: 100 }, { name: 'progressive house', count: 80 }],
+              tag: [
+                { name: 'electronic', count: 100 },
+                { name: 'progressive house', count: 80 },
+              ],
             },
           }),
         });
@@ -145,7 +148,13 @@ describe('Last.fm Client & Acoustic Intelligence', () => {
       artists: [{ name: 'Daft Punk' }],
       duration_ms: 240000,
     };
-    const danceFeatures = estimateAudioFeatures(danceTrack, ['dance', 'electronic', 'house', 'disco', 'party']);
+    const danceFeatures = estimateAudioFeatures(danceTrack, [
+      'dance',
+      'electronic',
+      'house',
+      'disco',
+      'party',
+    ]);
 
     expect(danceFeatures.id).toBe('dance123');
     expect(danceFeatures.danceability).toBeGreaterThan(0.6);
@@ -160,7 +169,12 @@ describe('Last.fm Client & Acoustic Intelligence', () => {
       artists: [{ name: 'The Beatles' }],
       duration_ms: 140000,
     };
-    const acousticFeatures = estimateAudioFeatures(acousticTrack, ['acoustic', 'folk', 'guitar', 'unplugged']);
+    const acousticFeatures = estimateAudioFeatures(acousticTrack, [
+      'acoustic',
+      'folk',
+      'guitar',
+      'unplugged',
+    ]);
 
     expect(acousticFeatures.id).toBe('acoustic123');
     expect(acousticFeatures.acousticness).toBeGreaterThan(0.5);

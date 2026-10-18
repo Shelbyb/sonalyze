@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import {
   LayoutGrid,
   BarChart3,
@@ -15,29 +15,29 @@ import {
   LogOut,
   Waves,
   TrendingUp,
-} from "lucide-react";
-import clsx from "clsx";
-import { useUserStore } from "@/lib/stores/useUserStore";
-import { useCapabilities } from "@/hooks/useCapabilities";
+} from 'lucide-react';
+import clsx from 'clsx';
+import { useUserStore } from '@/lib/stores/useUserStore';
+import { useCapabilities } from '@/hooks/useCapabilities';
 
 const historyLink = {
-  href: "/dashboard/history",
-  label: "History trends",
+  href: '/dashboard/history',
+  label: 'History trends',
   icon: TrendingUp,
 };
 
 const links = [
-  { href: "/dashboard", label: "Overview", icon: LayoutGrid },
-  { href: "/dashboard/top-artists", label: "Top artists", icon: BarChart3 },
-  { href: "/dashboard/top-tracks", label: "Top tracks", icon: Music2 },
+  { href: '/dashboard', label: 'Overview', icon: LayoutGrid },
+  { href: '/dashboard/top-artists', label: 'Top artists', icon: BarChart3 },
+  { href: '/dashboard/top-tracks', label: 'Top tracks', icon: Music2 },
   {
-    href: "/dashboard/recently-played",
-    label: "Recently played",
+    href: '/dashboard/recently-played',
+    label: 'Recently played',
     icon: History,
   },
-  { href: "/dashboard/taste-profile", label: "Taste profile", icon: Compass },
-  { href: "/dashboard/playlists", label: "Your playlists", icon: ListMusic },
-  { href: "/dashboard/discover", label: "Playlist generator", icon: Wand2 },
+  { href: '/dashboard/taste-profile', label: 'Taste profile', icon: Compass },
+  { href: '/dashboard/playlists', label: 'Your playlists', icon: ListMusic },
+  { href: '/dashboard/discover', label: 'Playlist generator', icon: Wand2 },
 ];
 
 export default function Sidebar({
@@ -53,24 +53,21 @@ export default function Sidebar({
   const storeUser = useUserStore((s) => s.user);
   const clearUser = useUserStore((s) => s.clearUser);
 
-  const effectiveName = storeUser?.name ?? userName ?? "Listener";
+  const effectiveName = storeUser?.name ?? userName ?? 'Listener';
   const effectiveImage = storeUser?.image ?? userImage ?? null;
 
   const handleLogout = async () => {
     clearUser();
-    await signOut({ callbackUrl: "/" });
+    await signOut({ callbackUrl: '/' });
   };
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-white/8 bg-panel/60 backdrop-blur lg:flex">
-      <Link
-        href="/dashboard"
-        className="flex items-center gap-2.5 px-6 py-6 group"
-      >
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-black transition-transform group-hover:scale-105">
+    <aside className="bg-panel/60 fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-white/8 backdrop-blur lg:flex">
+      <Link href="/dashboard" className="group flex items-center gap-2.5 px-6 py-6">
+        <div className="bg-accent flex h-8 w-8 items-center justify-center rounded-full text-black transition-transform group-hover:scale-105">
           <Waves className="h-4 w-4" strokeWidth={2.5} />
         </div>
-        <span className="font-display text-base font-bold tracking-tight text-cream">
+        <span className="font-display text-cream text-base font-bold tracking-tight">
           Sonalyze
         </span>
       </Link>
@@ -83,14 +80,14 @@ export default function Sidebar({
               key={href}
               href={href}
               className={clsx(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 active
-                  ? "bg-elevated text-cream font-semibold"
-                  : "text-muted hover:bg-elevated/60 hover:text-cream",
+                  ? 'bg-elevated text-cream font-semibold'
+                  : 'text-muted hover:bg-elevated/60 hover:text-cream',
               )}
             >
               <Icon
-                className={clsx("h-4 w-4", active && "text-accent")}
+                className={clsx('h-4 w-4', active && 'text-accent')}
                 strokeWidth={2}
               />
               {label}
@@ -101,25 +98,19 @@ export default function Sidebar({
 
       <div className="border-t border-white/8 px-3 py-4">
         <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-elevated2 text-xs font-bold text-accent ring-1 ring-white/10">
+          <div className="bg-elevated2 text-accent flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-bold ring-1 ring-white/10">
             {effectiveImage ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={effectiveImage}
-                alt=""
-                className="h-full w-full object-cover"
-              />
+              <img src={effectiveImage} alt="" className="h-full w-full object-cover" />
             ) : (
               effectiveName.charAt(0).toUpperCase()
             )}
           </div>
-          <span className="truncate text-sm font-medium text-cream">
-            {effectiveName}
-          </span>
+          <span className="text-cream truncate text-sm font-medium">{effectiveName}</span>
         </div>
         <button
           onClick={handleLogout}
-          className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-elevated/60 hover:text-cream cursor-pointer"
+          className="text-muted hover:bg-elevated/60 hover:text-cream mt-1 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
         >
           <LogOut className="h-4 w-4" strokeWidth={2} />
           Log out

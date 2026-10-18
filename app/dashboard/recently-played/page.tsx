@@ -23,11 +23,18 @@ function dayLabel(iso: string) {
 
   if (sameDay(date, today)) return 'Today';
   if (sameDay(date, yesterday)) return 'Yesterday';
-  return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  return date.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 function timeLabel(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
 export default function RecentlyPlayedPage() {
@@ -53,7 +60,7 @@ export default function RecentlyPlayedPage() {
       (item) =>
         item.track.name.toLowerCase().includes(q) ||
         item.track.artists.some((a) => a.name.toLowerCase().includes(q)) ||
-        item.track.album.name.toLowerCase().includes(q)
+        item.track.album.name.toLowerCase().includes(q),
     );
   }, [items, searchQuery]);
 
@@ -61,9 +68,10 @@ export default function RecentlyPlayedPage() {
   const stats = useMemo(() => {
     if (!items) return null;
     const totalMinutes = Math.round(
-      items.reduce((sum, item) => sum + item.track.duration_ms, 0) / 60000
+      items.reduce((sum, item) => sum + item.track.duration_ms, 0) / 60000,
     );
-    const uniqueArtists = new Set(items.flatMap((i) => i.track.artists.map((a) => a.id))).size;
+    const uniqueArtists = new Set(items.flatMap((i) => i.track.artists.map((a) => a.id)))
+      .size;
     return {
       totalCount: items.length,
       totalMinutes,
@@ -81,11 +89,21 @@ export default function RecentlyPlayedPage() {
   // Export history to CSV
   const handleExportCSV = () => {
     if (!filteredItems.length) return;
-    const headers = ['Played_At', 'Title', 'Artists', 'Album', 'Duration_Sec', 'Spotify_URL'];
+    const headers = [
+      'Played_At',
+      'Title',
+      'Artists',
+      'Album',
+      'Duration_Sec',
+      'Spotify_URL',
+    ];
     const rows = filteredItems.map((item) => [
       `"${new Date(item.played_at).toISOString()}"`,
       `"${item.track.name.replace(/"/g, '""')}"`,
-      `"${item.track.artists.map((a) => a.name).join(', ').replace(/"/g, '""')}"`,
+      `"${item.track.artists
+        .map((a) => a.name)
+        .join(', ')
+        .replace(/"/g, '""')}"`,
       `"${item.track.album.name.replace(/"/g, '""')}"`,
       Math.round(item.track.duration_ms / 1000),
       item.track.external_urls.spotify,
@@ -118,44 +136,50 @@ export default function RecentlyPlayedPage() {
         <div className="space-y-4">
           {stats && (
             <div className="grid grid-cols-3 gap-3">
-              <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-panel/40 p-4">
-                <Disc3 className="h-5 w-5 text-accent shrink-0" />
+              <div className="bg-panel/40 flex items-center gap-3 rounded-2xl border border-white/8 p-4">
+                <Disc3 className="text-accent h-5 w-5 shrink-0" />
                 <div>
-                  <p className="text-xs text-subtle">Total Tracks</p>
-                  <p className="font-display text-lg font-bold text-cream">{stats.totalCount}</p>
+                  <p className="text-subtle text-xs">Total Tracks</p>
+                  <p className="font-display text-cream text-lg font-bold">
+                    {stats.totalCount}
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-panel/40 p-4">
-                <Clock className="h-5 w-5 text-accent shrink-0" />
+              <div className="bg-panel/40 flex items-center gap-3 rounded-2xl border border-white/8 p-4">
+                <Clock className="text-accent h-5 w-5 shrink-0" />
                 <div>
-                  <p className="text-xs text-subtle">Listening Time</p>
-                  <p className="font-display text-lg font-bold text-cream">{stats.totalMinutes} min</p>
+                  <p className="text-subtle text-xs">Listening Time</p>
+                  <p className="font-display text-cream text-lg font-bold">
+                    {stats.totalMinutes} min
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-panel/40 p-4">
-                <Users className="h-5 w-5 text-accent shrink-0" />
+              <div className="bg-panel/40 flex items-center gap-3 rounded-2xl border border-white/8 p-4">
+                <Users className="text-accent h-5 w-5 shrink-0" />
                 <div>
-                  <p className="text-xs text-subtle">Unique Artists</p>
-                  <p className="font-display text-lg font-bold text-cream">{stats.uniqueArtists}</p>
+                  <p className="text-subtle text-xs">Unique Artists</p>
+                  <p className="font-display text-cream text-lg font-bold">
+                    {stats.uniqueArtists}
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/8 bg-panel/30 p-3 backdrop-blur">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+          <div className="bg-panel/30 flex flex-col gap-3 rounded-2xl border border-white/8 p-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative max-w-sm flex-1">
+              <Search className="text-subtle absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search history by title, artist, or album…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl border border-white/8 bg-elevated/80 pl-9 pr-3 py-1.5 text-xs text-cream placeholder-subtle outline-none focus:border-accent/40"
+                className="bg-elevated/80 text-cream placeholder-subtle focus:border-accent/40 w-full rounded-xl border border-white/8 py-1.5 pr-3 pl-9 text-xs outline-none"
               />
             </div>
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-1.5 rounded-xl border border-white/8 bg-elevated/80 px-3 py-1.5 text-xs font-medium text-muted hover:text-cream hover:bg-elevated transition-colors"
+              className="bg-elevated/80 text-muted hover:text-cream hover:bg-elevated flex items-center gap-1.5 rounded-xl border border-white/8 px-3 py-1.5 text-xs font-medium transition-colors"
             >
               <Download className="h-3.5 w-3.5" />
               <span>Export History CSV</span>
@@ -189,10 +213,10 @@ export default function RecentlyPlayedPage() {
         <div className="space-y-8">
           {Object.entries(groups).map(([label, group]) => (
             <section key={label}>
-              <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-accent">
+              <h2 className="text-accent mb-3 flex items-center gap-2 text-xs font-semibold tracking-[0.15em] uppercase">
                 {label} ({group.length})
               </h2>
-              <div className="rounded-2xl border border-white/8 bg-panel/40 p-2 shadow-inner">
+              <div className="bg-panel/40 rounded-2xl border border-white/8 p-2 shadow-inner">
                 {group.map((item, i) => (
                   <TrackRow
                     key={`${item.track.id}-${item.played_at}-${i}`}

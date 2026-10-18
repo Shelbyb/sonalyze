@@ -54,17 +54,17 @@ export default function ErrorBoundary({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base p-4 sm:p-6 text-cream">
-      <div className="relative w-full max-w-lg rounded-2xl border border-red-500/20 bg-surface/90 backdrop-blur-xl p-6 sm:p-8 shadow-2xl text-center space-y-6">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20">
+    <div className="bg-base text-cream flex min-h-screen items-center justify-center p-4 sm:p-6">
+      <div className="bg-surface/90 relative w-full max-w-lg space-y-6 rounded-2xl border border-red-500/20 p-6 text-center shadow-2xl backdrop-blur-xl sm:p-8">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-400">
           <AlertTriangle className="h-7 w-7" />
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold font-display text-white">
+          <h1 className="font-display text-2xl font-bold text-white">
             {isSessionError ? 'Session Expired or Invalid' : 'Something went wrong'}
           </h1>
-          <p className="text-sm text-neutral-300 leading-relaxed">
+          <p className="text-sm leading-relaxed text-neutral-300">
             {isSessionError
               ? redirectCountdown !== null && redirectCountdown > 0
                 ? `Your session is invalid or has expired. Redirecting to the login page in ${redirectCountdown}s...`
@@ -75,15 +75,15 @@ export default function ErrorBoundary({
 
         {errorMessage && !isSessionError && (
           <div className="rounded-xl border border-neutral-800 bg-neutral-950/60 p-3 text-left">
-            <p className="text-xs text-neutral-400 font-mono break-all">{errorMessage}</p>
+            <p className="font-mono text-xs break-all text-neutral-400">{errorMessage}</p>
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row">
           {isSessionError ? (
             <button
               onClick={handleLoginRedirect}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-accent hover:bg-accent/90 text-black px-5 py-3 text-sm font-semibold transition-all shadow-lg shadow-accent/20 cursor-pointer"
+              className="bg-accent hover:bg-accent/90 shadow-accent/20 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-black shadow-lg transition-all"
             >
               <LogIn className="h-4 w-4" />
               Return to Login
@@ -92,14 +92,14 @@ export default function ErrorBoundary({
             <>
               <button
                 onClick={() => reset()}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-accent hover:bg-accent/90 text-black px-4 py-2.5 text-sm font-semibold transition-all shadow-lg shadow-accent/20 cursor-pointer"
+                className="bg-accent hover:bg-accent/90 shadow-accent/20 inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black shadow-lg transition-all"
               >
                 <RotateCcw className="h-4 w-4" />
                 Try again
               </button>
               <Link
                 href="/"
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-surface-elevated hover:bg-neutral-800 text-neutral-200 px-4 py-2.5 text-sm font-medium border border-neutral-700 transition-colors"
+                className="bg-surface-elevated inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-neutral-700 px-4 py-2.5 text-sm font-medium text-neutral-200 transition-colors hover:bg-neutral-800"
               >
                 <Home className="h-4 w-4" />
                 Home

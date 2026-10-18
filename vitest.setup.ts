@@ -9,7 +9,9 @@ process.env.DAYWALKER_AUTH_URL = 'https://auth.daywalker.dev';
 process.env.NEXTAUTH_SECRET = 'test-secret-min-32-chars-long-abcdef123456';
 
 // Mock window.HTMLMediaElement.prototype
-window.HTMLMediaElement.prototype.play = vi.fn().mockImplementation(() => Promise.resolve());
+window.HTMLMediaElement.prototype.play = vi
+  .fn()
+  .mockImplementation(() => Promise.resolve());
 window.HTMLMediaElement.prototype.pause = vi.fn();
 window.HTMLMediaElement.prototype.load = vi.fn();
 
@@ -24,7 +26,12 @@ vi.mock('next/navigation', () => ({
   }),
   usePathname: () => '/dashboard',
   useParams: () => ({ id: 'test-track-123' }),
-  useSearchParams: () => new URLSearchParams(typeof window !== 'undefined' && window.location.search ? window.location.search : 'error=Unauthorized&status=401'),
+  useSearchParams: () =>
+    new URLSearchParams(
+      typeof window !== 'undefined' && window.location.search
+        ? window.location.search
+        : 'error=Unauthorized&status=401',
+    ),
 }));
 
 // Mock next-auth/react
@@ -32,7 +39,11 @@ vi.mock('next-auth/react', () => ({
   SessionProvider: ({ children }: { children: React.ReactNode }) => children,
   useSession: () => ({
     data: {
-      user: { name: 'Alex Johnson', email: 'alex@example.com', image: 'https://example.com/avatar.jpg' },
+      user: {
+        name: 'Alex Johnson',
+        email: 'alex@example.com',
+        image: 'https://example.com/avatar.jpg',
+      },
       accessToken: 'mock-access-token',
     },
     status: 'authenticated',
@@ -41,9 +52,13 @@ vi.mock('next-auth/react', () => ({
   signOut: vi.fn(),
 }));
 
-const DEFAULT_LICENSE_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+const DEFAULT_LICENSE_KEY =
+  '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
-function createMockSealedBundle(serviceSlug = 'sonalyze', salt = 'default-test-salt-123') {
+function createMockSealedBundle(
+  serviceSlug = 'sonalyze',
+  salt = 'default-test-salt-123',
+) {
   const iv = crypto.randomBytes(12);
   const key = Buffer.from(DEFAULT_LICENSE_KEY, 'hex');
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
@@ -66,52 +81,54 @@ function createMockSealedBundle(serviceSlug = 'sonalyze', salt = 'default-test-s
 
 // Default global fetch handler for Daywalker Auth endpoints
 const originalFetch = global.fetch;
-global.fetch = vi.fn().mockImplementation(async (url: string | URL | Request, init?: RequestInit) => {
-  const urlStr = typeof url === 'string' ? url : (url as any)?.url || url.toString();
+global.fetch = vi
+  .fn()
+  .mockImplementation(async (url: string | URL | Request, init?: RequestInit) => {
+    const urlStr = typeof url === 'string' ? url : (url as any)?.url || url.toString();
 
-  if (urlStr.includes('/oauth/token')) {
-    return new Response(
-      JSON.stringify({
-        access_token: 'tok_jwt_test',
-        refresh_token: 'ref_jwt_test',
-        token_type: 'DPoP',
-        expires_in: 3600,
-        refresh_expires_in: 86400,
-        scope: 'sonalyze',
-        services: ['sonalyze'],
-        licenses: {
-          sonalyze: {
-            licenseKey: DEFAULT_LICENSE_KEY,
-            expiresAt: new Date(Date.now() + 3600000).toISOString(),
+    if (urlStr.includes('/oauth/token')) {
+      return new Response(
+        JSON.stringify({
+          access_token: 'tok_jwt_test',
+          refresh_token: 'ref_jwt_test',
+          token_type: 'DPoP',
+          expires_in: 3600,
+          refresh_expires_in: 86400,
+          scope: 'sonalyze',
+          services: ['sonalyze'],
+          licenses: {
+            sonalyze: {
+              licenseKey: DEFAULT_LICENSE_KEY,
+              expiresAt: new Date(Date.now() + 3600000).toISOString(),
+            },
           },
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
         },
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  }
+      );
+    }
 
-  if (urlStr.includes('/bundle')) {
-    return new Response(
-      JSON.stringify({
-        serviceSlug: 'sonalyze',
-        bundle: createMockSealedBundle(),
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  }
+    if (urlStr.includes('/bundle')) {
+      return new Response(
+        JSON.stringify({
+          serviceSlug: 'sonalyze',
+          bundle: createMockSealedBundle(),
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
 
-  if (originalFetch) {
-    return originalFetch(url, init);
-  }
+    if (originalFetch) {
+      return originalFetch(url, init);
+    }
 
-  return new Response(JSON.stringify({}), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
+    return new Response(JSON.stringify({}), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   });
-});

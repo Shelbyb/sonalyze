@@ -63,10 +63,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className={`${sora.variable} ${inter.variable}`}>
-      <body className="font-body bg-base text-cream antialiased pb-20 lg:pb-0">
-        <Providers>
-          {authResult.valid ? children : <ServiceErrorPage />}
-        </Providers>
+      <body className="font-body bg-base text-cream pb-20 antialiased lg:pb-0">
+        <Providers>{authResult.valid ? children : <ServiceErrorPage />}</Providers>
       </body>
     </html>
   );

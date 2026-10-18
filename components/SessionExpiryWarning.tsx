@@ -3,7 +3,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { formatClock } from '@/lib/format';
 import { Clock, RefreshCw, LogOut, AlertTriangle } from 'lucide-react';
+import { fetchWithRetry } from '@/lib/fetch-retry';
 
 const WARNING_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 
@@ -41,7 +43,7 @@ export default function SessionExpiryWarning() {
           return;
         }
       } else {
-        await fetch('/api/auth/session');
+        await fetchWithRetry('/api/auth/session');
         router.refresh();
       }
       setShowWarning(false);
@@ -100,9 +102,7 @@ export default function SessionExpiryWarning() {
     return null;
   }
 
-  const minutes = Math.floor(timeLeftSec / 60);
-  const seconds = timeLeftSec % 60;
-  const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const formattedTime = formatClock(timeLeftSec);
 
   return (
     <div
@@ -110,41 +110,42 @@ export default function SessionExpiryWarning() {
       aria-modal="true"
       aria-labelledby="session-warning-title"
       aria-describedby="session-warning-desc"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-all"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md transition-all"
     >
-      <div className="relative w-full max-w-md rounded-2xl border border-amber-500/30 bg-surface/95 p-6 sm:p-8 shadow-2xl shadow-amber-950/40 text-center backdrop-blur-xl">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 mb-4 animate-pulse">
+      <div className="bg-surface/95 relative w-full max-w-md rounded-2xl border border-amber-500/30 p-6 text-center shadow-2xl shadow-amber-950/40 backdrop-blur-xl sm:p-8">
+        <div className="mx-auto mb-4 flex h-14 w-14 animate-pulse items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/15 text-amber-400">
           <Clock className="h-7 w-7" />
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-3">
+        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-semibold tracking-wider text-amber-400 uppercase">
           <AlertTriangle className="h-3.5 w-3.5" />
           Session Warning
         </div>
 
         <h2
           id="session-warning-title"
-          className="text-xl sm:text-2xl font-bold font-display text-white mb-2"
+          className="font-display mb-2 text-xl font-bold text-white sm:text-2xl"
         >
           Session Expiring Soon
         </h2>
 
         <p
           id="session-warning-desc"
-          className="text-sm text-neutral-300 leading-relaxed mb-6"
+          className="mb-6 text-sm leading-relaxed text-neutral-300"
         >
           Your session will expire in{' '}
-          <span className="font-mono font-bold text-accent text-base px-1.5 py-0.5 rounded bg-surface-elevated border border-neutral-700">
+          <span className="text-accent bg-surface-elevated rounded border border-neutral-700 px-1.5 py-0.5 font-mono text-base font-bold">
             {formattedTime}
           </span>
-          . Would you like to refresh your session to continue listening and exploring, or log out?
+          . Would you like to refresh your session to continue listening and exploring, or
+          log out?
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <button
             onClick={handleLogout}
             disabled={isRefreshing}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-surface-elevated hover:bg-neutral-800 text-neutral-300 hover:text-white px-4 py-2.5 text-sm font-medium border border-neutral-700 transition-colors cursor-pointer disabled:opacity-50"
+            className="bg-surface-elevated inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-neutral-700 px-4 py-2.5 text-sm font-medium text-neutral-300 transition-colors hover:bg-neutral-800 hover:text-white disabled:opacity-50"
           >
             <LogOut className="h-4 w-4" />
             Log out
@@ -153,7 +154,7 @@ export default function SessionExpiryWarning() {
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-accent hover:bg-accent/90 text-black px-4 py-2.5 text-sm font-semibold transition-all shadow-lg shadow-accent/20 cursor-pointer disabled:opacity-50"
+            className="bg-accent hover:bg-accent/90 shadow-accent/20 inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black shadow-lg transition-all disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             {isRefreshing ? 'Refreshing...' : 'Extend Session'}

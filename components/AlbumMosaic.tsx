@@ -25,14 +25,14 @@ export default function AlbumMosaic({ className = '' }: { className?: string }) 
           }}
         >
           <div
-            className="w-full h-full rounded-xl opacity-40"
+            className="h-full w-full rounded-xl opacity-40"
             style={{
               backgroundImage:
                 i % 3 === 0
                   ? 'repeating-linear-gradient(45deg, rgba(0,0,0,0.15) 0 2px, transparent 2px 8px)'
                   : i % 3 === 1
-                  ? 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent 60%)'
-                  : 'repeating-radial-gradient(circle, rgba(0,0,0,0.12) 0 1px, transparent 1px 10px)',
+                    ? 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent 60%)'
+                    : 'repeating-radial-gradient(circle, rgba(0,0,0,0.12) 0 1px, transparent 1px 10px)',
             }}
           />
         </div>

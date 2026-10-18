@@ -1,9 +1,9 @@
-import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import type { TimeRange, SpotifyUser } from "@/types/spotify";
-import { getMe } from "@/lib/spotify";
-import type { StorageAdapter } from "@/lib/storage/adapters/types";
-import { browserAdapter } from "@/lib/storage/adapters/browser";
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import type { TimeRange, SpotifyUser } from '@/types/spotify';
+import { getMe } from '@/lib/spotify';
+import type { StorageAdapter } from '@/lib/storage/adapters/types';
+import { browserAdapter } from '@/lib/storage/adapters/browser';
 
 let activeAdapter: StorageAdapter = browserAdapter;
 
@@ -16,7 +16,7 @@ export function getStorageAdapter(): StorageAdapter {
 }
 
 function safely(promise: Promise<void>) {
-  promise.catch((e) => console.warn("Storage adapter error:", e));
+  promise.catch((e) => console.warn('Storage adapter error:', e));
 }
 
 export interface UserProfile {
@@ -57,7 +57,7 @@ export interface UserStoreState {
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
-  defaultTimeRange: "medium_term",
+  defaultTimeRange: 'medium_term',
   audioAutoplay: false,
   volume: 0.8,
 };
@@ -85,8 +85,7 @@ export const useUserStore = create<UserStoreState>()(
             image: user.image ?? state.user?.image ?? null,
             product: user.product ?? state.user?.product ?? null,
             country: user.country ?? state.user?.country ?? null,
-            followersCount:
-              user.followersCount ?? state.user?.followersCount ?? null,
+            followersCount: user.followersCount ?? state.user?.followersCount ?? null,
             spotifyUri: user.spotifyUri ?? state.user?.spotifyUri ?? null,
           },
           lastSyncedAt: Date.now(),
@@ -158,11 +157,7 @@ export const useUserStore = create<UserStoreState>()(
         if (!session?.user) return;
         const current = get().user;
         const newUser: UserProfile = {
-          id:
-            session.spotifyId ||
-            session.user.id ||
-            current?.id ||
-            null,
+          id: session.spotifyId || session.user.id || current?.id || null,
           name: session.user.name ?? current?.name ?? null,
           email: session.user.email ?? current?.email ?? null,
           image: session.user.image ?? current?.image ?? null,
@@ -184,10 +179,8 @@ export const useUserStore = create<UserStoreState>()(
           image: spotifyUser.images?.[0]?.url ?? current?.image ?? null,
           product: spotifyUser.product ?? current?.product ?? null,
           country: spotifyUser.country ?? current?.country ?? null,
-          followersCount:
-            spotifyUser.followers?.total ?? current?.followersCount ?? null,
-          spotifyUri:
-            spotifyUser.external_urls?.spotify ?? current?.spotifyUri ?? null,
+          followersCount: spotifyUser.followers?.total ?? current?.followersCount ?? null,
+          spotifyUri: spotifyUser.external_urls?.spotify ?? current?.spotifyUri ?? null,
         };
         set({ user: newUser, lastSyncedAt: Date.now() });
       },
@@ -201,7 +194,7 @@ export const useUserStore = create<UserStoreState>()(
             }));
           }
         } catch (e) {
-          console.warn("Could not load user from storage adapter:", e);
+          console.warn('Could not load user from storage adapter:', e);
         }
       },
 
@@ -214,14 +207,14 @@ export const useUserStore = create<UserStoreState>()(
           }
         } catch (e) {
           // If profile fetch fails (e.g. rate limit), keep existing persisted user state
-          console.warn("Could not fetch Spotify profile for user store:", e);
+          console.warn('Could not fetch Spotify profile for user store:', e);
         }
       },
     }),
     {
-      name: "sonalyze_user_storage",
+      name: 'sonalyze_user_storage',
       storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? window.localStorage : ({} as Storage),
+        typeof window !== 'undefined' ? window.localStorage : ({} as Storage),
       ),
       partialize: (state) => ({
         user: state.user,

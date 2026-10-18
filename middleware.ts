@@ -2,7 +2,11 @@ import {
   createDaywalkerServiceHealthMiddleware,
   STATIC_FILE_EXTENSIONS,
 } from '@shelbyb/daywalker-sdk/next';
-import { getClient, getDaywalkerServiceSlug, validateServiceToken } from '@/lib/daywalker-auth';
+import {
+  getClient,
+  getDaywalkerServiceSlug,
+  validateServiceToken,
+} from '@/lib/daywalker-auth';
 
 export const runtime = 'nodejs';
 

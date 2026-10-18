@@ -20,17 +20,26 @@ describe('Daywalker SDK Integrity & Policy Compliance', () => {
 
   it('verifies guard calls exist in proxy, readiness, and database files', () => {
     // 1. Proxy / Middleware
-    const middlewareContent = stripComments(readFileSync(join(rootDir, 'middleware.ts'), 'utf8'));
+    const middlewareContent = stripComments(
+      readFileSync(join(rootDir, 'middleware.ts'), 'utf8'),
+    );
     expect(middlewareContent).toContain('validateServiceToken');
 
     // 2. Readiness probe
-    const readinessContent = stripComments(readFileSync(join(rootDir, 'app/api/health/route.ts'), 'utf8'));
+    const readinessContent = stripComments(
+      readFileSync(join(rootDir, 'app/api/health/route.ts'), 'utf8'),
+    );
     expect(readinessContent).toContain('requireServiceAuth');
     expect(readinessContent).toContain('requireServiceLicense');
 
     // 3. DB client
-    const dbContent = stripComments(readFileSync(join(rootDir, 'lib/db/client.ts'), 'utf8'));
-    const defMatches = dbContent.match(/(?:function\s+assertServiceAuthorized|const\s+assertServiceAuthorized\s*=)/g) || [];
+    const dbContent = stripComments(
+      readFileSync(join(rootDir, 'lib/db/client.ts'), 'utf8'),
+    );
+    const defMatches =
+      dbContent.match(
+        /(?:function\s+assertServiceAuthorized|const\s+assertServiceAuthorized\s*=)/g,
+      ) || [];
     expect(defMatches.length).toBe(1);
 
     const callMatches = dbContent.match(/assertServiceAuthorized\s*\(/g) || [];

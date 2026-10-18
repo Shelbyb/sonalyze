@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from 'next-auth';
 import SpotifyProvider from 'next-auth/providers/spotify';
 import { validateServiceToken, requireServiceAuth } from '@/lib/daywalker-auth';
+import { fetchWithRetry } from '@/lib/fetch-retry';
 
 // Scopes needed across the app: reading top items, recently played,
 // playlists, and creating/modifying playlists for the recommendation feature.
@@ -20,20 +21,25 @@ async function refreshAccessToken(token: any) {
   try {
     await requireServiceAuth();
     const basic = Buffer.from(
-      `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
+      `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`,
     ).toString('base64');
 
-    const res = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${basic}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+    // Token refresh is idempotent for a given refresh token, so retry all transient failures.
+    const res = await fetchWithRetry(
+      'https://accounts.spotify.com/api/token',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${basic}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: token.refreshToken,
+        }),
       },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: token.refreshToken,
-      }),
-    });
+      { idempotent: true },
+    );
 
     const refreshed = await res.json();
     if (!res.ok) throw refreshed;
@@ -57,7 +63,7 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.SPOTIFY_CLIENT_ID ?? '',
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET ?? '',
       authorization: `https://accounts.spotify.com/authorize?scope=${encodeURIComponent(
-        SCOPES
+        SCOPES,
       )}`,
     }),
   ],
@@ -79,7 +85,7 @@ export const authOptions: NextAuthOptions = {
       const authResult = await validateServiceToken();
       return authResult.valid;
     },
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account, profile, trigger }) {
       await requireServiceAuth();
       if (account && profile) {
         return {
@@ -90,7 +96,12 @@ export const authOptions: NextAuthOptions = {
           spotifyId: (profile as any).id,
         };
       }
-      if (Date.now() < (token as any).accessTokenExpires - 60_000) {
+      // An explicit session update ("Extend Session") must force a refresh,
+      // otherwise the still-valid token keeps its old expiry and the warning reappears.
+      if (
+        trigger !== 'update' &&
+        Date.now() < (token as any).accessTokenExpires - 60_000
+      ) {
         return token;
       }
       return refreshAccessToken(token);

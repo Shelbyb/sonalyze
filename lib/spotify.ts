@@ -7,15 +7,7 @@ import type {
   SpotifyUser,
   TimeRange,
 } from '@/types/spotify';
-import {
-  getSimilarTracks,
-  getSimilarArtists,
-  getArtistTopTracks,
-  getTagTopTracks,
-  getTrackTopTags,
-  getArtistTopTags,
-  estimateAudioFeatures,
-} from '@/lib/lastfm';
+import { getTrackTopTags, getArtistTopTags, estimateAudioFeatures } from '@/lib/lastfm';
 
 const BASE = 'https://api.spotify.com/v1';
 
@@ -41,11 +33,11 @@ export function clearSpotifyCache(): void {
   inFlightRequests.clear();
 }
 
-async function spotifyFetch<T>(
+export async function spotifyFetch<T>(
   token: string,
   path: string,
   init?: RequestInit,
-  ttlMs = 3 * 60 * 1000 // Default 3 min TTL for GET requests
+  ttlMs = 3 * 60 * 1000, // Default 3 min TTL for GET requests
 ): Promise<T> {
   const method = init?.method?.toUpperCase() ?? 'GET';
   const isGet = method === 'GET';
@@ -80,7 +72,7 @@ async function spotifyFetch<T>(
         });
 
         if (res.status === 429) {
-          const retryAfter = Number(res.headers.get('Retry-After')) || (delay / 1000);
+          const retryAfter = Number(res.headers.get('Retry-After')) || delay / 1000;
           if (retries > 0) {
             retries--;
             await new Promise((r) => setTimeout(r, Math.max(retryAfter * 1000, delay)));
@@ -93,7 +85,7 @@ async function spotifyFetch<T>(
           const body = await res.text();
           throw new SpotifyApiError(
             `Spotify API ${res.status} on ${path}: ${body}`,
-            res.status
+            res.status,
           );
         }
 
@@ -110,7 +102,10 @@ async function spotifyFetch<T>(
 
         return data as T;
       } catch (err) {
-        if (retries > 0 && !(err instanceof SpotifyApiError && err.status < 500 && err.status !== 429)) {
+        if (
+          retries > 0 &&
+          !(err instanceof SpotifyApiError && err.status < 500 && err.status !== 429)
+        ) {
           retries--;
           await new Promise((r) => setTimeout(r, delay));
           delay *= 2;
@@ -137,20 +132,28 @@ async function spotifyFetch<T>(
 export const getMe = (token: string) =>
   spotifyFetch<SpotifyUser>(token, '/me', undefined, 10 * 60 * 1000);
 
-export const getTopArtists = (token: string, timeRange: TimeRange = 'medium_term', limit = 20) =>
+export const getTopArtists = (
+  token: string,
+  timeRange: TimeRange = 'medium_term',
+  limit = 20,
+) =>
   spotifyFetch<{ items: SpotifyArtist[] }>(
     token,
     `/me/top/artists?time_range=${timeRange}&limit=${limit}`,
     undefined,
-    5 * 60 * 1000
+    5 * 60 * 1000,
   );
 
-export const getTopTracks = (token: string, timeRange: TimeRange = 'medium_term', limit = 20) =>
+export const getTopTracks = (
+  token: string,
+  timeRange: TimeRange = 'medium_term',
+  limit = 20,
+) =>
   spotifyFetch<{ items: SpotifyTrack[] }>(
     token,
     `/me/top/tracks?time_range=${timeRange}&limit=${limit}`,
     undefined,
-    5 * 60 * 1000
+    5 * 60 * 1000,
   );
 
 export const getRecentlyPlayed = (token: string, limit = 50) =>
@@ -158,7 +161,7 @@ export const getRecentlyPlayed = (token: string, limit = 50) =>
     token,
     `/me/player/recently-played?limit=${limit}`,
     undefined,
-    60 * 1000 // 1 minute TTL for recent history
+    60 * 1000, // 1 minute TTL for recent history
   );
 
 export const getArtist = (token: string, id: string) =>
@@ -180,32 +183,35 @@ export const getSeveralTracks = (token: string, ids: string[]) => {
         token,
         `/tracks?ids=${chunk.join(',')}`,
         undefined,
-        10 * 60 * 1000
-      )
-    )
+        10 * 60 * 1000,
+      ),
+    ),
   ).then((results) => ({
     tracks: results.flatMap((r) => r.tracks).filter((t): t is SpotifyTrack => t !== null),
   }));
 };
+
+/** Auth failures must surface; only restricted/missing/network failures may fall back. */
+function rethrowIfUnauthorized(err: unknown): void {
+  if (err instanceof SpotifyApiError && err.status === 401) throw err;
+}
 
 export const searchTracks = (token: string, query: string, limit = 20) =>
   spotifyFetch<{ tracks: { items: SpotifyTrack[] } }>(
     token,
     `/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`,
     undefined,
-    5 * 60 * 1000
+    5 * 60 * 1000,
   );
 
 export const searchTrack = async (
   token: string,
   trackName: string,
-  artistName?: string
+  artistName?: string,
 ): Promise<SpotifyTrack | null> => {
   if (!trackName) return null;
   const cleanTrack = trackName.replace(/[([].*?[)\]]/g, '').trim();
-  const query = artistName
-    ? `track:${cleanTrack} artist:${artistName}`
-    : cleanTrack;
+  const query = artistName ? `track:${cleanTrack} artist:${artistName}` : cleanTrack;
 
   try {
     const res = await searchTracks(token, query, 3);
@@ -216,19 +222,34 @@ export const searchTrack = async (
       return fallbackRes?.tracks?.items?.[0] ?? null;
     }
     return null;
-  } catch {
+  } catch (err) {
+    rethrowIfUnauthorized(err);
     return null;
   }
 };
 
-export const getAudioFeatures = async (token: string, id: string): Promise<AudioFeatures> => {
+export const getAudioFeatures = async (
+  token: string,
+  id: string,
+): Promise<AudioFeatures> => {
   try {
-    const res = await spotifyFetch<AudioFeatures>(token, `/audio-features/${id}`, undefined, 10 * 60 * 1000);
-    if (res && (res.danceability !== undefined || res.tempo !== undefined || res.energy !== undefined)) {
+    const res = await spotifyFetch<AudioFeatures>(
+      token,
+      `/audio-features/${id}`,
+      undefined,
+      10 * 60 * 1000,
+    );
+    if (
+      res &&
+      (res.danceability !== undefined ||
+        res.tempo !== undefined ||
+        res.energy !== undefined)
+    ) {
       return res;
     }
-  } catch {
-    // Spotify audio-features restricted / failed; fall through to Last.fm estimation
+  } catch (err) {
+    // Expected: 403/404 (restricted) or network errors; 401 is rethrown
+    rethrowIfUnauthorized(err);
   }
 
   try {
@@ -238,14 +259,15 @@ export const getAudioFeatures = async (token: string, id: string): Promise<Audio
     const artistTags = trackTags.length < 3 ? await getArtistTopTags(artistName) : [];
     const allTags = [...trackTags.map((t) => t.name), ...artistTags.map((t) => t.name)];
     return estimateAudioFeatures(track, allTags);
-  } catch {
+  } catch (err) {
+    rethrowIfUnauthorized(err);
     return estimateAudioFeatures({ id, name: id, artists: [{ name: '' }] }, []);
   }
 };
 
 export const getSeveralAudioFeatures = async (
   token: string,
-  ids: string[]
+  ids: string[],
 ): Promise<{ audio_features: (AudioFeatures | null)[] }> => {
   if (ids.length === 0) return Promise.resolve({ audio_features: [] });
 
@@ -262,17 +284,20 @@ export const getSeveralAudioFeatures = async (
           token,
           `/audio-features?ids=${chunk.join(',')}`,
           undefined,
-          10 * 60 * 1000
-        )
-      )
+          10 * 60 * 1000,
+        ),
+      ),
     );
     const all = results.flatMap((r) => r.audio_features);
-    const validCount = all.filter((f) => f !== null && f?.danceability !== undefined).length;
+    const validCount = all.filter(
+      (f) => f !== null && f?.danceability !== undefined,
+    ).length;
     if (validCount > 0) {
       return { audio_features: all };
     }
-  } catch {
-    // Fall back to Last.fm acoustic estimation
+  } catch (err) {
+    // Expected: 403/404 (restricted) or network errors; 401 is rethrown
+    rethrowIfUnauthorized(err);
   }
 
   // 2. Fallback: retrieve track metadata and compute acoustic DNA from Last.fm tags
@@ -294,13 +319,14 @@ export const getSeveralAudioFeatures = async (
         } catch {
           return estimateAudioFeatures(track, []);
         }
-      })
+      }),
     );
 
     return { audio_features: featuresList };
-  } catch {
+  } catch (err) {
+    rethrowIfUnauthorized(err);
     const defaultFeatures = ids.map((id) =>
-      estimateAudioFeatures({ id, name: id, artists: [{ name: '' }] }, [])
+      estimateAudioFeatures({ id, name: id, artists: [{ name: '' }] }, []),
     );
     return { audio_features: defaultFeatures };
   }
@@ -311,230 +337,44 @@ export const getUserPlaylists = (token: string, limit = 50) =>
     token,
     `/me/playlists?limit=${limit}`,
     undefined,
-    3 * 60 * 1000
+    3 * 60 * 1000,
   );
 
 export const getPlaylistTracks = async (
   token: string,
   playlistId: string,
-  limit = 50
+  limit = 50,
 ): Promise<{ items: { track: SpotifyTrack }[] }> => {
   try {
     return await spotifyFetch<{ items: { track: SpotifyTrack }[] }>(
       token,
       `/playlists/${playlistId}/tracks?limit=${limit}`,
       undefined,
-      3 * 60 * 1000
+      3 * 60 * 1000,
     );
   } catch (err) {
     if (err instanceof SpotifyApiError && (err.status === 403 || err.status === 404)) {
       try {
-        const full = await spotifyFetch<{ tracks?: { items: { track: SpotifyTrack }[] } }>(
-          token,
-          `/playlists/${playlistId}`,
-          undefined,
-          3 * 60 * 1000
-        );
+        const full = await spotifyFetch<{
+          tracks?: { items: { track: SpotifyTrack }[] };
+        }>(token, `/playlists/${playlistId}`, undefined, 3 * 60 * 1000);
         if (full?.tracks?.items) {
           return { items: full.tracks.items };
         }
-      } catch {
-        // rethrow original error
+      } catch (fullErr) {
+        // Only treat 403/404 as a restricted playlist; surface 401, 429 and 5xx
+        if (
+          fullErr instanceof SpotifyApiError &&
+          (fullErr.status === 403 || fullErr.status === 404)
+        ) {
+          return { items: [] };
+        }
+        throw fullErr;
       }
+      return { items: [] };
     }
     throw err;
   }
-};
-
-export async function getRecommendationsFromLastFm(
-  token: string,
-  params: {
-    seedTracks?: string[];
-    seedArtists?: string[];
-    seedGenres?: string[];
-    seedTrackObjects?: { name: string; artist: string }[];
-    targetEnergy?: number;
-    targetValence?: number;
-    targetDanceability?: number;
-    limit?: number;
-  }
-): Promise<{ tracks: SpotifyTrack[] }> {
-  const limit = params.limit ?? 20;
-  const seedTrackObjs: { name: string; artist: string }[] = params.seedTrackObjects
-    ? [...params.seedTrackObjects]
-    : [];
-
-  // If seedTrackObjects not provided, resolve from seedTracks IDs
-  if (seedTrackObjs.length === 0 && params.seedTracks?.length) {
-    try {
-      const { tracks } = await getSeveralTracks(token, params.seedTracks.slice(0, 5));
-      for (const t of tracks) {
-        if (t?.name) {
-          seedTrackObjs.push({
-            name: t.name,
-            artist: t.artists?.[0]?.name ?? '',
-          });
-        }
-      }
-    } catch {
-      // Ignore resolution errors
-    }
-  }
-
-  // Collect candidate track titles & artists from Last.fm
-  const candidateMap = new Map<string, { name: string; artist: string; score: number }>();
-  const addCandidate = (name: string, artist: string, score: number) => {
-    if (!name || !artist) return;
-    const key = `${name.toLowerCase()}:::${artist.toLowerCase()}`;
-    const isSeed = seedTrackObjs.some(
-      (s) => s.name.toLowerCase() === name.toLowerCase() && s.artist.toLowerCase() === artist.toLowerCase()
-    );
-    if (isSeed) return;
-
-    const existing = candidateMap.get(key);
-    if (!existing || existing.score < score) {
-      candidateMap.set(key, { name, artist, score });
-    }
-  };
-
-  // 1. Query similar tracks for each seed track
-  await Promise.all(
-    seedTrackObjs.map(async (seed) => {
-      try {
-        const similars = await getSimilarTracks(seed.artist, seed.name, 30);
-        similars.forEach((sim, idx) => {
-          const matchScore = typeof sim.match === 'number' ? sim.match : 1 - idx * 0.03;
-          addCandidate(sim.name, sim.artist, matchScore);
-        });
-      } catch {
-        // Continue with other seeds
-      }
-    })
-  );
-
-  // 2. Query similar artists and top tracks
-  if (params.seedArtists?.length) {
-    await Promise.all(
-      params.seedArtists.slice(0, 3).map(async (artistId) => {
-        try {
-          const artist = await getArtist(token, artistId);
-          if (artist?.name) {
-            const similarArtists = await getSimilarArtists(artist.name, 6);
-            await Promise.all(
-              similarArtists.map(async (sa) => {
-                const top = await getArtistTopTracks(sa.name, 4);
-                top.forEach((t) => addCandidate(t.name, t.artist, 0.75));
-              })
-            );
-          }
-        } catch {
-          // Ignore
-        }
-      })
-    );
-  }
-
-  // 3. Query genre top tracks if seedGenres provided
-  if (params.seedGenres?.length) {
-    await Promise.all(
-      params.seedGenres.slice(0, 3).map(async (genre) => {
-        try {
-          const top = await getTagTopTracks(genre, 20);
-          top.forEach((t) => addCandidate(t.name, t.artist, 0.65));
-        } catch {
-          // Ignore
-        }
-      })
-    );
-  }
-
-  // If still low candidates, query artist top tracks for seed tracks' artists
-  if (candidateMap.size < limit) {
-    await Promise.all(
-      seedTrackObjs.map(async (seed) => {
-        if (!seed.artist) return;
-        try {
-          const top = await getArtistTopTracks(seed.artist, 6);
-          top.forEach((t) => addCandidate(t.name, t.artist, 0.6));
-        } catch {
-          // Ignore
-        }
-      })
-    );
-  }
-
-  // Rank and select candidates
-  const candidates = Array.from(candidateMap.values())
-    .sort((a, b) => b.score - a.score)
-    .slice(0, Math.max(limit * 2, 40));
-
-  // Concurrently resolve candidates to SpotifyTrack objects
-  const resolvedTracks: SpotifyTrack[] = [];
-  const seenSpotifyIds = new Set<string>();
-
-  if (params.seedTracks) {
-    params.seedTracks.forEach((id) => seenSpotifyIds.add(id));
-  }
-
-  const batchSize = 6;
-  for (let i = 0; i < candidates.length && resolvedTracks.length < limit; i += batchSize) {
-    const batch = candidates.slice(i, i + batchSize);
-    const results = await Promise.all(
-      batch.map((c) => searchTrack(token, c.name, c.artist))
-    );
-
-    for (const track of results) {
-      if (track && !seenSpotifyIds.has(track.id)) {
-        seenSpotifyIds.add(track.id);
-        resolvedTracks.push(track);
-        if (resolvedTracks.length >= limit) break;
-      }
-    }
-  }
-
-  return { tracks: resolvedTracks };
-}
-
-export const getRecommendations = async (
-  token: string,
-  params: {
-    seedTracks?: string[];
-    seedArtists?: string[];
-    seedGenres?: string[];
-    seedTrackObjects?: { name: string; artist: string }[];
-    targetEnergy?: number;
-    targetValence?: number;
-    targetDanceability?: number;
-    limit?: number;
-  }
-): Promise<{ tracks: SpotifyTrack[] }> => {
-  const qs = new URLSearchParams();
-  if (params.seedTracks?.length) qs.set('seed_tracks', params.seedTracks.slice(0, 5).join(','));
-  if (params.seedArtists?.length) qs.set('seed_artists', params.seedArtists.slice(0, 5).join(','));
-  if (params.seedGenres?.length) qs.set('seed_genres', params.seedGenres.slice(0, 5).join(','));
-  if (params.targetEnergy !== undefined) qs.set('target_energy', String(params.targetEnergy));
-  if (params.targetValence !== undefined) qs.set('target_valence', String(params.targetValence));
-  if (params.targetDanceability !== undefined)
-    qs.set('target_danceability', String(params.targetDanceability));
-  qs.set('limit', String(params.limit ?? 20));
-
-  // 1. Attempt Spotify native recommendations
-  try {
-    const res = await spotifyFetch<{ tracks: SpotifyTrack[] }>(
-      token,
-      `/recommendations?${qs.toString()}`,
-      undefined,
-      60 * 1000
-    );
-    if (res?.tracks?.length > 0) {
-      return res;
-    }
-  } catch {
-    // Spotify recommendations restricted / failed; fall back to Last.fm + Spotify Search
-  }
-
-  // 2. Fall back to Last.fm discovery + Spotify track search
-  return getRecommendationsFromLastFm(token, params);
 };
 
 export const createPlaylist = (
@@ -542,7 +382,7 @@ export const createPlaylist = (
   userId: string,
   name: string,
   description: string,
-  isPublic: boolean
+  isPublic: boolean,
 ): Promise<SpotifyPlaylist> =>
   spotifyFetch<SpotifyPlaylist>(token, `/users/${userId}/playlists`, {
     method: 'POST',
@@ -561,7 +401,7 @@ export const createPlaylistWithTracks = async (
   name: string,
   description: string,
   uris: string[],
-  isPublic = false
+  isPublic = false,
 ): Promise<SpotifyPlaylist> => {
   const playlist = await createPlaylist(token, userId, name, description, isPublic);
   if (uris.length > 0) {
@@ -572,13 +412,15 @@ export const createPlaylistWithTracks = async (
   return playlist;
 };
 
-export const getAvailableGenreSeeds = async (token: string): Promise<{ genres: string[] }> => {
+export const getAvailableGenreSeeds = async (
+  token: string,
+): Promise<{ genres: string[] }> => {
   try {
     const res = await spotifyFetch<{ genres: string[] }>(
       token,
       '/recommendations/available-genre-seeds',
       undefined,
-      60 * 60 * 1000
+      60 * 60 * 1000,
     );
     if (res?.genres?.length) return res;
   } catch {
@@ -615,3 +457,8 @@ export const getAvailableGenreSeeds = async (token: string): Promise<{ genres: s
     ],
   };
 };
+
+export {
+  getRecommendations,
+  getRecommendationsFromLastFm,
+} from '@/lib/spotify-recommendations';

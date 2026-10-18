@@ -6,7 +6,10 @@ import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { ShieldAlert, AlertTriangle, LogIn, ArrowRight } from 'lucide-react';
 
-const ERROR_MESSAGES: Record<string, { title: string; description: string; isSession: boolean }> = {
+const ERROR_MESSAGES: Record<
+  string,
+  { title: string; description: string; isSession: boolean }
+> = {
   SessionRequired: {
     title: 'Authentication Required',
     description: 'You need to be signed in with Spotify to access this page.',
@@ -49,7 +52,8 @@ const ERROR_MESSAGES: Record<string, { title: string; description: string; isSes
   },
   Configuration: {
     title: 'Server Configuration Error',
-    description: 'There is a server authentication configuration issue. Please contact support.',
+    description:
+      'There is a server authentication configuration issue. Please contact support.',
     isSession: false,
   },
   Default: {
@@ -100,12 +104,12 @@ function ErrorContent() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-base p-4 sm:p-6 lg:p-8 text-cream overflow-hidden">
+    <div className="bg-base text-cream relative flex min-h-screen items-center justify-center overflow-hidden p-4 sm:p-6 lg:p-8">
       {/* Background ambient glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-accent/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="bg-accent/10 pointer-events-none absolute top-1/4 left-1/2 h-[300px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px]" />
 
-      <div className="relative w-full max-w-lg rounded-2xl border border-neutral-800 bg-surface/90 backdrop-blur-xl p-6 sm:p-8 shadow-2xl text-center space-y-6">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+      <div className="bg-surface/90 relative w-full max-w-lg space-y-6 rounded-2xl border border-neutral-800 p-6 text-center shadow-2xl backdrop-blur-xl sm:p-8">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-400">
           {errorInfo.isSession ? (
             <ShieldAlert className="h-7 w-7" />
           ) : (
@@ -114,8 +118,12 @@ function ErrorContent() {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold font-display text-white">{errorInfo.title}</h1>
-          <p className="text-sm text-neutral-300 leading-relaxed">{errorInfo.description}</p>
+          <h1 className="font-display text-2xl font-bold text-white">
+            {errorInfo.title}
+          </h1>
+          <p className="text-sm leading-relaxed text-neutral-300">
+            {errorInfo.description}
+          </p>
         </div>
 
         {errorInfo.isSession && (
@@ -126,10 +134,10 @@ function ErrorContent() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row">
           <button
             onClick={handleLogin}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-accent hover:bg-accent/90 text-black px-5 py-3 text-sm font-semibold transition-all shadow-lg shadow-accent/20 cursor-pointer"
+            className="bg-accent hover:bg-accent/90 shadow-accent/20 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-black shadow-lg transition-all"
           >
             <LogIn className="h-4 w-4" />
             Go to Login
@@ -139,7 +147,7 @@ function ErrorContent() {
         <div>
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-neutral-400 transition-colors hover:text-white"
           >
             Return to Sonalyze Home
             <ArrowRight className="h-3.5 w-3.5" />
@@ -154,7 +162,7 @@ export default function ErrorPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-base text-neutral-400">
+        <div className="bg-base flex min-h-screen items-center justify-center text-neutral-400">
           <div className="text-sm">Loading...</div>
         </div>
       }

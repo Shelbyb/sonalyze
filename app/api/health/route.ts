@@ -24,7 +24,7 @@ export async function GET(request: Request) {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate',
         },
-      }
+      },
     );
   } catch (err: any) {
     return NextResponse.json(
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate',
         },
-      }
+      },
     );
   }
 }

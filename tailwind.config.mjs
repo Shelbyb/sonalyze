@@ -22,8 +22,10 @@ const config = {
         body: ['var(--font-body)'],
       },
       backgroundImage: {
-        'radial-fade': 'radial-gradient(120% 120% at 50% -10%, rgba(30,215,96,0.25) 0%, rgba(10,10,10,0) 55%)',
-        'card-fade': 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 100%)',
+        'radial-fade':
+          'radial-gradient(120% 120% at 50% -10%, rgba(30,215,96,0.25) 0%, rgba(10,10,10,0) 55%)',
+        'card-fade':
+          'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 100%)',
       },
       keyframes: {
         rise: {

@@ -5,7 +5,7 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     env_file:
       - .env.local
     environment:
@@ -15,7 +15,7 @@ services:
 
   db:
     image: postgres:17-alpine
-    profiles: ["postgres"]
+    profiles: ['postgres']
     environment:
       POSTGRES_USER: sonalyze
       POSTGRES_PASSWORD: sonalyze
@@ -23,7 +23,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sonalyze -d sonalyze"]
+      test: ['CMD-SHELL', 'pg_isready -U sonalyze -d sonalyze']
       interval: 5s
       timeout: 5s
       retries: 10

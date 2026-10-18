@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
@@ -14,11 +14,7 @@ import {
   Disc3,
 } from 'lucide-react';
 import { getTopArtists, getTopTracks, getRecentlyPlayed } from '@/lib/spotify';
-import type {
-  SpotifyArtist,
-  SpotifyTrack,
-  RecentlyPlayedItem,
-} from '@/types/spotify';
+import type { SpotifyArtist, SpotifyTrack, RecentlyPlayedItem } from '@/types/spotify';
 import PageHeader from '@/components/PageHeader';
 import ArtistCard from '@/components/ArtistCard';
 import TrackRow from '@/components/TrackRow';
@@ -46,8 +42,8 @@ export default function DashboardOverview() {
     let cancelled = false;
 
     Promise.all([
-      getTopArtists(token, "short_term", 5),
-      getTopTracks(token, "short_term", 5),
+      getTopArtists(token, 'short_term', 5),
+      getTopTracks(token, 'short_term', 5),
       getRecentlyPlayed(token, 8),
     ])
       .then(([a, t, r]) => {
@@ -75,14 +71,13 @@ export default function DashboardOverview() {
       });
     });
     const topGenre =
-      Object.entries(genreMap).sort((a, b) => b[1] - a[1])[0]?.[0] ??
-      "Eclectic";
+      Object.entries(genreMap).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Eclectic';
 
     // Top artist name
-    const topArtist = artists[0]?.name ?? "N/A";
+    const topArtist = artists[0]?.name ?? 'N/A';
 
     // Top track name
-    const topTrack = tracks[0]?.name ?? "N/A";
+    const topTrack = tracks[0]?.name ?? 'N/A';
 
     // Total duration of recent queue in minutes
     const recentMins = Math.round(
@@ -99,23 +94,19 @@ export default function DashboardOverview() {
     };
   }, [artists, tracks, recent]);
 
-  const name = (storeUser?.name || session?.user?.name)?.split(" ")[0];
+  const name = (storeUser?.name || session?.user?.name)?.split(' ')[0];
 
   return (
     <div className="space-y-10">
-      <SnapshotRecorder
-        timeRange="short_term"
-        tracks={tracks}
-        artists={artists}
-      />
+      <SnapshotRecorder timeRange="short_term" tracks={tracks} artists={artists} />
       <PageHeader
         eyebrow="Intelligence Hub"
-        title={name ? `Welcome back, ${name}` : "Welcome back"}
+        title={name ? `Welcome back, ${name}` : 'Welcome back'}
         description="A real-time overview of your musical identity, audio preferences, and recent sessions."
         action={
           <Link
             href="/dashboard/discover"
-            className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-black transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-accent/20"
+            className="bg-accent shadow-accent/20 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-black shadow-lg transition-transform hover:scale-105 active:scale-95"
           >
             <Sparkles className="h-4 w-4" /> Smart Generator
           </Link>
@@ -128,9 +119,7 @@ export default function DashboardOverview() {
       <section>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {!stats ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <StatCardSkeleton key={i} />
-            ))
+            Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
           ) : (
             <>
               <StatCard
@@ -149,10 +138,7 @@ export default function DashboardOverview() {
               />
               <StatCard
                 title="Dominant Genre"
-                value={
-                  stats.topGenre.charAt(0).toUpperCase() +
-                  stats.topGenre.slice(1)
-                }
+                value={stats.topGenre.charAt(0).toUpperCase() + stats.topGenre.slice(1)}
                 subtitle="Taste profile leader"
                 icon={Radio}
                 badge="Style"
@@ -172,12 +158,12 @@ export default function DashboardOverview() {
       {/* Top Artists Preview */}
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-cream">
-            <BarChart3 className="h-4 w-4 text-accent" /> Top artists this month
+          <h2 className="font-display text-cream flex items-center gap-2 text-lg font-semibold tracking-tight">
+            <BarChart3 className="text-accent h-4 w-4" /> Top artists this month
           </h2>
           <Link
             href="/dashboard/top-artists"
-            className="flex items-center gap-1 text-xs font-semibold text-muted hover:text-accent transition-colors"
+            className="text-muted hover:text-accent flex items-center gap-1 text-xs font-semibold transition-colors"
           >
             See all <ArrowRight className="h-3 w-3" />
           </Link>
@@ -196,12 +182,12 @@ export default function DashboardOverview() {
       {/* Top Tracks Preview */}
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-cream">
-            <Music2 className="h-4 w-4 text-accent" /> Top tracks this month
+          <h2 className="font-display text-cream flex items-center gap-2 text-lg font-semibold tracking-tight">
+            <Music2 className="text-accent h-4 w-4" /> Top tracks this month
           </h2>
           <Link
             href="/dashboard/top-tracks"
-            className="flex items-center gap-1 text-xs font-semibold text-muted hover:text-accent transition-colors"
+            className="text-muted hover:text-accent flex items-center gap-1 text-xs font-semibold transition-colors"
           >
             See all <ArrowRight className="h-3 w-3" />
           </Link>
@@ -209,7 +195,7 @@ export default function DashboardOverview() {
         {!tracks ? (
           <TrackListSkeleton count={5} />
         ) : (
-          <div className="rounded-2xl border border-white/8 bg-panel/40 p-2 shadow-inner">
+          <div className="bg-panel/40 rounded-2xl border border-white/8 p-2 shadow-inner">
             {tracks.map((t, i) => (
               <TrackRow key={t.id} track={t} rank={i + 1} />
             ))}
@@ -220,12 +206,12 @@ export default function DashboardOverview() {
       {/* Recently Played */}
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-cream">
-            <History className="h-4 w-4 text-accent" /> Recently played
+          <h2 className="font-display text-cream flex items-center gap-2 text-lg font-semibold tracking-tight">
+            <History className="text-accent h-4 w-4" /> Recently played
           </h2>
           <Link
             href="/dashboard/recently-played"
-            className="flex items-center gap-1 text-xs font-semibold text-muted hover:text-accent transition-colors"
+            className="text-muted hover:text-accent flex items-center gap-1 text-xs font-semibold transition-colors"
           >
             See timeline <ArrowRight className="h-3 w-3" />
           </Link>
@@ -233,12 +219,9 @@ export default function DashboardOverview() {
         {!recent ? (
           <TrackListSkeleton count={5} />
         ) : (
-          <div className="rounded-2xl border border-white/8 bg-panel/40 p-2 shadow-inner">
+          <div className="bg-panel/40 rounded-2xl border border-white/8 p-2 shadow-inner">
             {recent.slice(0, 5).map((r, i) => (
-              <TrackRow
-                key={`${r.track.id}-${r.played_at}-${i}`}
-                track={r.track}
-              />
+              <TrackRow key={`${r.track.id}-${r.played_at}-${i}`} track={r.track} />
             ))}
           </div>
         )}
@@ -247,23 +230,23 @@ export default function DashboardOverview() {
       {/* Generator Callout */}
       <Link
         href="/dashboard/discover"
-        className="flex items-center justify-between rounded-2xl border border-accent/30 bg-accent/5 p-6 transition-all duration-300 hover:border-accent/60 hover:bg-accent/10 hover:shadow-lg hover:shadow-accent/5"
+        className="border-accent/30 bg-accent/5 hover:border-accent/60 hover:bg-accent/10 hover:shadow-accent/5 flex items-center justify-between rounded-2xl border p-6 transition-all duration-300 hover:shadow-lg"
       >
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-black shadow-md shadow-accent/20">
+          <div className="bg-accent shadow-accent/20 flex h-12 w-12 items-center justify-center rounded-xl text-black shadow-md">
             <Wand2 className="h-6 w-6" />
           </div>
           <div>
-            <p className="font-display text-base font-semibold tracking-tight text-cream">
+            <p className="font-display text-cream text-base font-semibold tracking-tight">
               Build a custom mix from your sonic profile
             </p>
-            <p className="text-sm text-muted">
-              Select any seed playlist, fine-tune energy, mood, and
-              danceability, and save new discoveries directly to Spotify.
+            <p className="text-muted text-sm">
+              Select any seed playlist, fine-tune energy, mood, and danceability, and save
+              new discoveries directly to Spotify.
             </p>
           </div>
         </div>
-        <ArrowRight className="h-5 w-5 text-accent" />
+        <ArrowRight className="text-accent h-5 w-5" />
       </Link>
     </div>
   );

@@ -25,13 +25,9 @@ export default function LoginButton({
   return (
     <button
       onClick={() => signIn('spotify', { callbackUrl: '/dashboard' })}
-      className={`group relative inline-flex items-center justify-center ${sizing} rounded-full bg-accent text-black font-display font-bold tracking-tight
-        shadow-[0_0_0_0_rgba(30,215,96,0.5)] transition-all duration-300
-        hover:scale-[1.04] hover:shadow-[0_8px_40px_-4px_rgba(30,215,96,0.65)] active:scale-[0.98]
-        focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent
-        ${className}`}
+      className={`group relative inline-flex items-center justify-center ${sizing} bg-accent font-display focus-visible:outline-accent rounded-full font-bold tracking-tight text-black shadow-[0_0_0_0_rgba(30,215,96,0.5)] transition-all duration-300 hover:scale-[1.04] hover:shadow-[0_8px_40px_-4px_rgba(30,215,96,0.65)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 active:scale-[0.98] ${className}`}
     >
-      <SpotifyIcon className={size === 'lg' ? 'w-6 h-6' : 'w-5 h-5'} />
+      <SpotifyIcon className={size === 'lg' ? 'h-6 w-6' : 'h-5 w-5'} />
       {label}
       <span className="absolute inset-0 rounded-full ring-1 ring-black/10" />
     </button>

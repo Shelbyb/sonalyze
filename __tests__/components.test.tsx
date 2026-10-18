@@ -45,7 +45,7 @@ describe('Component Library Tests', () => {
       render(
         <AudioPlayerProvider>
           <TrackRow track={mockTrack} rank={1} meta="Recently Played" />
-        </AudioPlayerProvider>
+        </AudioPlayerProvider>,
       );
     });
 
@@ -81,7 +81,7 @@ describe('Component Library Tests', () => {
         subtitle="65% of listening"
         icon={Sparkles}
         badge="Top Style"
-      />
+      />,
     );
 
     expect(screen.getByText('Dominant Genre')).toBeInTheDocument();
@@ -97,12 +97,14 @@ describe('Component Library Tests', () => {
         title="Taste Profile"
         description="Exploration of your sonic preferences."
         action={<button>Export</button>}
-      />
+      />,
     );
 
     expect(screen.getByText('Intelligence')).toBeInTheDocument();
     expect(screen.getByText('Taste Profile')).toBeInTheDocument();
-    expect(screen.getByText('Exploration of your sonic preferences.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Exploration of your sonic preferences.'),
+    ).toBeInTheDocument();
     expect(screen.getByText('Export')).toBeInTheDocument();
   });
 
@@ -129,7 +131,9 @@ describe('Component Library Tests', () => {
     expect(screen.getByText('API rate limit encountered')).toBeInTheDocument();
     expect(screen.getByText('Try again in 30s')).toBeInTheDocument();
 
-    rerender(<EmptyState title="No playlists found" body="Create a playlist on Spotify first" />);
+    rerender(
+      <EmptyState title="No playlists found" body="Create a playlist on Spotify first" />,
+    );
     expect(screen.getByText('No playlists found')).toBeInTheDocument();
     expect(screen.getByText('Create a playlist on Spotify first')).toBeInTheDocument();
   });
@@ -165,7 +169,7 @@ describe('Component Library Tests', () => {
         <AudioPlayerProvider>
           <PlayerTestConsumer />
           <GlobalPlayer />
-        </AudioPlayerProvider>
+        </AudioPlayerProvider>,
       );
     });
 

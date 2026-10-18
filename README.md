@@ -4,7 +4,6 @@
 
 # Sonalyze — Audio Intelligence & Spotify Listening Visualizer
 
-
 <p align="center">
   <img src="https://img.shields.io/badge/Node.js-%3E%3D22.0.0-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js >=22" />
   <img src="https://img.shields.io/badge/npm-%3E%3D10.0.0-CB3837?style=for-the-badge&logo=npm&logoColor=white" alt="npm >=10" />
@@ -31,17 +30,19 @@ No database is required. By default Sonalyze runs in **browser storage mode**, w
 
 - [Tech Stack Carousel](#-tech-stack-carousel)
 - [Key Features & Performance Optimizations](#-key-features--performance-optimizations)
+- [Spotify Extended Access & Last.fm Hybridization Architecture](#-spotify-extended-access--lastfm-hybridization-architecture)
 - [Live Production Demo & Domain](#-live-production-demo--domain)
 - [1. Spotify Developer Setup](#-1-spotify-developer-setup)
-- [2. Daywalker Account & API Key](#-2-daywalker-account--api-key)
-- [3. Configure Environment Variables](#-3-configure-environment-variables)
-- [4. Daywalker Service Authorization](#-4-daywalker-service-authorization)
+- [2. Last.fm API Key Setup](#-2-lastfm-api-key-setup-optional)
+- [3. Daywalker Account & API Key](#-3-daywalker-account--api-key)
+- [4. Configure Environment Variables](#-4-configure-environment-variables)
+- [5. Daywalker Service Authorization](#-5-daywalker-service-authorization)
 - [Storage Modes](#-storage-modes)
-- [5. Local Development](#-5-local-development)
-- [6. Testing & Quality Assurance](#-6-testing--quality-assurance)
-- [7. DigitalOcean App Platform Deployment](#-7-digitalocean-app-platform-deployment)
-- [8. Security & Hardening Safeguards](#-8-security--hardening-safeguards)
-- [9. Troubleshooting](#-9-troubleshooting)
+- [6. Local Development & Cloning](#-6-local-development--cloning)
+- [7. Testing, Quality Assurance & Linting](#-7-testing-quality-assurance--linting)
+- [8. DigitalOcean App Platform Deployment](#-8-digitalocean-app-platform-deployment)
+- [9. Security & Hardening Safeguards](#-9-security--hardening-safeguards)
+- [10. Troubleshooting](#-10-troubleshooting)
 - [Docker & Compose](#-docker--compose)
 
 ---
@@ -56,19 +57,23 @@ No database is required. By default Sonalyze runs in **browser storage mode**, w
 ├───────────────┼─────────────────┼────────────────┼───────────────────┼─────────────────┤
 │  Next.js 16   │ Tailwind CSS v4 │ NextAuth.js +  │     Recharts      │  Vitest (88%+)  │
 │  (Turbopack)  │    + PostCSS    │ Daywalker Auth │  (Radar / Bar)    │ Playwright E2E  │
-└───────────────┴─────────────────┴────────────────┴───────────────────┴─────────────────┘
+├───────────────┼─────────────────┼────────────────┴───────────────────┴─────────────────┤
+│ Music Data    │ Spotify Web API + Last.fm Music Intelligence API (Hybrid Resolution)   │
+└───────────────┴────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Technology | Purpose & Implementation |
-| :--- | :--- |
-| **Next.js 16** | App Router, Turbopack compilation, standalone container output, and route streaming. |
-| **Tailwind CSS v4** | Modern CSS theme engine with GPU-accelerated micro-animations and responsive grid. |
-| **Daywalker Auth** | Cryptographic service authorization, RFC 9421 HTTP Message Signatures, and perimeter middleware. |
-| **NextAuth.js** | Stateless Spotify OAuth 2.0 provider with automatic token refreshing and HTTP-only JWTs. |
-| **Recharts** | Interactive vector radar charts and bar charts for audio DNA and genre distribution. |
-| **Lucide React** | Streamlined SVG icon system for UI controls and music indicators. |
-| **Vitest & Playwright**| 88%+ line test coverage across all components and API utilities, plus cross-browser E2E testing. |
-| **Docker & DigitalOcean**| Multi-stage Alpine container running as unprivileged `nextjs:nodejs` user. |
+| Technology                | Purpose & Implementation                                                                         |
+| :------------------------ | :----------------------------------------------------------------------------------------------- |
+| **Next.js 16**            | App Router, Turbopack compilation, standalone container output, and route streaming.             |
+| **Tailwind CSS v4**       | Modern CSS theme engine with GPU-accelerated micro-animations and responsive grid.               |
+| **Daywalker Auth**        | Cryptographic service authorization, RFC 9421 HTTP Message Signatures, and perimeter middleware. |
+| **NextAuth.js**           | Stateless Spotify OAuth 2.0 provider with automatic token refreshing and HTTP-only JWTs.         |
+| **Spotify Web API**       | User listening history, top artists/tracks, profile management, and direct playlist creation.    |
+| **Last.fm API**           | Catalog similarity graph, genre discovery, and acoustic intelligence fallback.                   |
+| **Recharts**              | Interactive vector radar charts and bar charts for audio DNA and genre distribution.             |
+| **Lucide React**          | Streamlined SVG icon system for UI controls and music indicators.                                |
+| **Vitest & Playwright**   | 88%+ line test coverage across all components and API utilities, plus cross-browser E2E testing. |
+| **Docker & DigitalOcean** | Multi-stage Alpine container running as unprivileged `nextjs:nodejs` user.                       |
 
 ---
 
@@ -76,11 +81,40 @@ No database is required. By default Sonalyze runs in **browser storage mode**, w
 
 - **Global 30s Audio Preview Player**: Listen to 30-second audio previews inline across Top Tracks, Recently Played, Dashboard, and Track Details with animated equalizer bars, scrub bar, volume control, and keyboard shortcuts (`Space` to toggle playback).
 - **Sub-Millisecond Client-Side Caching**: In-memory caching and in-flight request deduplication with exponential backoff on Spotify rate limits.
+- **Smart Playlist Generator (Discover)**: Generate intelligent recommendation mixes based on seed playlists and acoustic sliders (Energy, Valence, Danceability), complete with 1-click export to Spotify.
 - **Instant Search & Sort**: Real-time filtering and multi-attribute sorting across all track and artist catalogs.
 - **CSV Spreadsheet Export**: One-click download of Top Tracks and Listening History.
-- **One-Click Playlist Creation**: Export your ranked listening data straight into a new Spotify playlist in your personal library.
 - **Audio DNA Breakdown**: Radar analysis of Danceability, Energy, Valence, Acousticness, Instrumentalness, Liveness, Speechiness, Camelot key notation, Tempo, and Loudness.
-- **Taste Profile & Archetypes**: Algorithmically derives your Sonic Archetype (e.g. *High-Octane Party Catalyst*, *Radiant Mood Uplifter*) with shareable summary cards.
+- **Taste Profile & Archetypes**: Algorithmically derives your Sonic Archetype (e.g. _High-Octane Party Catalyst_, _Radiant Mood Uplifter_) with shareable summary cards.
+
+---
+
+## 🧠 Spotify Extended Access & Last.fm Hybridization Architecture
+
+### Why Hybridization is Required
+
+In late 2024 and 2025, Spotify updated its Web API access policy, restricting algorithmic discovery and audio analysis endpoints:
+
+- `GET /v1/recommendations`
+- `GET /v1/recommendations/available-genre-seeds`
+- `GET /v1/audio-features` and `GET /v1/audio-analysis`
+
+These endpoints return `HTTP 403 Forbidden` for standard developer apps running in **Development Mode** unless the app has been granted **Extended Quota Mode / Extended API Access** (a status Spotify now reserves strictly for registered commercial partner organizations).
+
+### How Sonalyze Solves This Seamlessly
+
+To ensure maximum utility, high availability, and zero feature degradation for any developer cloning or deploying Sonalyze:
+
+1. **Intelligent Fallback Architecture**:
+   - When generating recommendations or analyzing acoustic features, Sonalyze attempts the direct Spotify endpoint first.
+   - If Spotify responds with HTTP 403, Sonalyze automatically routes the request through the **Last.fm Music Intelligence API** (`track.getSimilar`, `artist.getSimilar`, `tag.getTopTracks`, `track.getTopTags`).
+2. **Catalog Resolution & Spotify Normalization**:
+   - The candidates returned from Last.fm's similarity graph are immediately resolved against the official Spotify Catalog via `searchTracks` / `getSeveralTracks`.
+   - The resulting objects are normalized into full `SpotifyTrack` entities with official album art, 30-second preview audio streams, and Spotify URIs.
+3. **Native Spotify Integration**:
+   - Generated recommendations can be exported straight into the user's personal Spotify library in 1 click via `createPlaylistWithTracks`.
+4. **Zero-Config Default & Dedicated Key Support**:
+   - An active fallback API key is built into `lib/lastfm.ts` with 15-minute in-memory caching. You can optionally supply your own `LASTFM_API_KEY` for isolated quotas.
 
 ---
 
@@ -105,7 +139,22 @@ No database is required. By default Sonalyze runs in **browser storage mode**, w
 
 ---
 
-## 🛡️ 2. Daywalker Account & API Key
+## 🎵 2. Last.fm API Key Setup (Optional)
+
+Sonalyze includes a built-in fallback key for the Last.fm music intelligence engine, but creating your own dedicated free API key ensures isolated rate limits and maximum reliability:
+
+1. Create a free account or log in at [Last.fm](https://www.last.fm).
+2. Open the [Last.fm API Account Creation Form](https://www.last.fm/api/account/create).
+3. Complete the short registration form:
+   - **Application name**: `Sonalyze` (or your project name)
+   - **Application description**: Audio intelligence and smart playlist recommendation engine.
+   - Leave **Callback URL** and **Homepage** blank (or set to your app's domain).
+4. Click **Submit**. Your **API Key** is generated immediately (zero review wait times).
+5. Copy your **API Key** and set it as `LASTFM_API_KEY` and `NEXT_PUBLIC_LASTFM_API_KEY` in `.env.local` and your production deployment settings.
+
+---
+
+## 🛡️ 3. Daywalker Account & API Key
 
 1. Create a free account at [Daywalker Dev](https://auth.daywalker.dev/signup?service=sonalyze).
 2. Generate an **API Key** (`DAYWALKER_API_KEY`) from the dashboard for Sonalyze service authorization.
@@ -113,7 +162,7 @@ No database is required. By default Sonalyze runs in **browser storage mode**, w
 
 ---
 
-## 🔑 3. Configure Environment Variables
+## 🔑 4. Configure Environment Variables
 
 Copy [`.env.local.example`](./.env.local.example) to `.env.local` for local development. In production, variables are set on the DigitalOcean app dashboard:
 
@@ -139,22 +188,24 @@ APP_URL=https://<your_domain_url>
 
 ### Environment Variables Reference
 
-| Variable | Required | Scope | Details |
-|---|---|---|---|
-| `SPOTIFY_CLIENT_ID` | ✅ Yes | `RUN_TIME` | 🔒 **Secret.** Spotify Developer Application Client ID. |
-| `SPOTIFY_CLIENT_SECRET` | ✅ Yes | `RUN_TIME` | 🔒 **Secret.** Spotify Developer Application Client Secret. |
-| `NEXTAUTH_SECRET` | ✅ Yes | `RUN_TIME` | 🔒 **Secret.** Cryptographic secret used to sign and encrypt JWT cookies (`openssl rand -base64 48`). Rotating it invalidates existing sessions. |
-| `NEXTAUTH_URL` | ✅ Yes | `RUN_AND_BUILD_TIME` | Canonical authentication URL (`https://localhost:3000` locally, `${APP_URL}` in production). |
-| `DAYWALKER_API_KEY` | ✅ Yes | `RUN_TIME` | 🔒 **Secret.** Daywalker service API token (`srv_live_...`, or `enc:v1:` encrypted). |
-| `DAYWALKER_SIGNING_KEY` | ⚠️ Recommended | `RUN_TIME` | 🔒 **Secret.** Ed25519 PKCS#8 key used to sign outbound validate requests with RFC 9421 / RFC 9530 HTTP Message Signatures. |
-| `DAYWALKER_KEY_ID` | ➖ Optional | `RUN_TIME` | RFC 7638 JWK thumbprint or key identifier registered in Daywalker Auth. |
-| `DAYWALKER_SIGNING_DOMAIN` | ➖ Optional | `RUN_TIME` | Public hostname the signature is issued for (`sonalyze.daywalker.dev`). Takes precedence over `APP_URL`. |
-| `DAYWALKER_PUBLIC_KEY` | ➖ Optional | `RUN_TIME` | Optional Daywalker public key / JWK for zero-egress offline JWT token lease verification. |
-| `APP_URL` | ➖ Optional | `RUN_TIME` | Public origin (`https://sonalyze.daywalker.dev`). Used for the signing domain when `DAYWALKER_SIGNING_DOMAIN` is unset. |
-| `STORAGE_MODE` | ➖ Optional | `RUN_TIME` | `browser` (default) or `postgres`. When unset, Postgres is used automatically if `DATABASE_URL` is set. |
-| `DATABASE_URL` | ➖ Optional | `RUN_TIME` | 🔒 **Secret.** Postgres connection string (`postgres://user:pass@host:5432/db`). Enables database storage. |
-| `DATABASE_READ_URL` | ➖ Optional | `RUN_TIME` | 🔒 **Secret.** Read-only replica connection string. History and tag reads use it; writes always use `DATABASE_URL`. Falls back to `DATABASE_URL` when unset. |
-| `NODE_ENV` | ➖ Optional | `RUN_AND_BUILD_TIME` | Application environment mode (`production` / `development`). |
+| Variable                     | Required       | Scope                | Details                                                                                                                                                      |
+| ---------------------------- | -------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SPOTIFY_CLIENT_ID`          | ✅ Yes         | `RUN_TIME`           | 🔒 **Secret.** Spotify Developer Application Client ID.                                                                                                      |
+| `SPOTIFY_CLIENT_SECRET`      | ✅ Yes         | `RUN_TIME`           | 🔒 **Secret.** Spotify Developer Application Client Secret.                                                                                                  |
+| `NEXTAUTH_SECRET`            | ✅ Yes         | `RUN_TIME`           | 🔒 **Secret.** Cryptographic secret used to sign and encrypt JWT cookies (`openssl rand -base64 48`). Rotating it invalidates existing sessions.             |
+| `NEXTAUTH_URL`               | ✅ Yes         | `RUN_AND_BUILD_TIME` | Canonical authentication URL (`https://localhost:3000` locally, `${APP_URL}` in production).                                                                 |
+| `DAYWALKER_API_KEY`          | ✅ Yes         | `RUN_TIME`           | 🔒 **Secret.** Daywalker service API token (`srv_live_...`, or `enc:v1:` encrypted).                                                                         |
+| `LASTFM_API_KEY`             | ➖ Optional    | `RUN_TIME`           | 🔒 **Secret.** Dedicated Last.fm API Key for music discovery and recommendation fallback (defaults to built-in shared key).                                  |
+| `NEXT_PUBLIC_LASTFM_API_KEY` | ➖ Optional    | `RUN_AND_BUILD_TIME` | Public Last.fm API Key for client-side discovery requests (defaults to built-in shared key).                                                                 |
+| `DAYWALKER_SIGNING_KEY`      | ⚠️ Recommended | `RUN_TIME`           | 🔒 **Secret.** Ed25519 PKCS#8 key used to sign outbound validate requests with RFC 9421 / RFC 9530 HTTP Message Signatures.                                  |
+| `DAYWALKER_KEY_ID`           | ➖ Optional    | `RUN_TIME`           | RFC 7638 JWK thumbprint or key identifier registered in Daywalker Auth.                                                                                      |
+| `DAYWALKER_SIGNING_DOMAIN`   | ➖ Optional    | `RUN_TIME`           | Public hostname the signature is issued for (`sonalyze.daywalker.dev`). Takes precedence over `APP_URL`.                                                     |
+| `DAYWALKER_PUBLIC_KEY`       | ➖ Optional    | `RUN_TIME`           | Optional Daywalker public key / JWK for zero-egress offline JWT token lease verification.                                                                    |
+| `APP_URL`                    | ➖ Optional    | `RUN_TIME`           | Public origin (`https://sonalyze.daywalker.dev`). Used for the signing domain when `DAYWALKER_SIGNING_DOMAIN` is unset.                                      |
+| `STORAGE_MODE`               | ➖ Optional    | `RUN_TIME`           | `browser` (default) or `postgres`. When unset, Postgres is used automatically if `DATABASE_URL` is set.                                                      |
+| `DATABASE_URL`               | ➖ Optional    | `RUN_TIME`           | 🔒 **Secret.** Postgres connection string (`postgres://user:pass@host:5432/db`). Enables database storage.                                                   |
+| `DATABASE_READ_URL`          | ➖ Optional    | `RUN_TIME`           | 🔒 **Secret.** Read-only replica connection string. History and tag reads use it; writes always use `DATABASE_URL`. Falls back to `DATABASE_URL` when unset. |
+| `NODE_ENV`                   | ➖ Optional    | `RUN_AND_BUILD_TIME` | Application environment mode (`production` / `development`).                                                                                                 |
 
 **Legend**
 
@@ -170,7 +221,7 @@ APP_URL=https://<your_domain_url>
 
 ---
 
-## 🛡️ 4. Daywalker Service Authorization
+## 🛡️ 5. Daywalker Service Authorization
 
 Sonalyze enforces cryptographic service authorization directly across its runtime perimeter:
 
@@ -194,23 +245,26 @@ Sonalyze enforces cryptographic service authorization directly across its runtim
 
 Sonalyze supports two storage modes, selected by environment variables. No code changes are needed.
 
-| Feature | Browser (default) | Postgres |
-| :--- | :---: | :---: |
-| Spotify login (stateless JWT cookie) | ✅ | ✅ |
-| Profile and preferences cached in `localStorage` | ✅ | ✅ |
-| Preferences and profile synced across devices | ❌ | ✅ |
-| Listening history snapshots and trends page | ❌ | ✅ |
-| Custom track tags | ❌ | ✅ |
+| Feature                                          | Browser (default) | Postgres |
+| :----------------------------------------------- | :---------------: | :------: |
+| Spotify login (stateless JWT cookie)             |        ✅         |    ✅    |
+| Profile and preferences cached in `localStorage` |        ✅         |    ✅    |
+| Preferences and profile synced across devices    |        ❌         |    ✅    |
+| Listening history snapshots and trends page      |        ❌         |    ✅    |
+| Custom track tags                                |        ❌         |    ✅    |
 
 ### Browser mode (default)
+
 Leave `DATABASE_URL` unset. Nothing else is required.
 
 ### Postgres mode
+
 1. Start Postgres (for example `docker compose --profile postgres up -d db`).
 2. Set `DATABASE_URL=postgres://<user>:<password>@localhost:5432/<database>` in `.env.local`.
 3. Run `node scripts/migrate.mjs` once for local development. Containers apply migrations automatically on start.
 
 Notes:
+
 - Mode is resolved on the server and exposed at `GET /api/storage/capabilities`. The UI hides History and tag controls in browser mode.
 - If `DATABASE_URL` is set but the database is unreachable, the app falls back to browser mode instead of crashing.
 - Spotify tokens are never stored in the database. Rows are keyed by Spotify user id.
@@ -221,49 +275,89 @@ Notes:
 
 ---
 
-## 💻 5. Local Development
+## 💻 6. Local Development & Cloning
 
 ### System Requirements
+
 - **Node.js**: `>=22.0.0` (Active LTS / v24 recommended, managed via `.nvmrc` / `.node-version`)
 - **npm**: `>=10.0.0` (enforced via `engine-strict` in `.npmrc` and `packageManager` specification)
 
-Install dependencies and start the secure development server:
+### Step-by-Step Setup
 
-```bash
-# Switch to supported Node version (optional if using nvm/fnm)
-nvm use
+1. **Clone the Repository**:
 
-# Install dependencies with strict engine validation
-npm install
+   ```bash
+   git clone https://github.com/Shelbyb/sonalyze.git
+   cd sonalyze
+   ```
 
-# Start development server with TLS
-npm run dev:secure
-```
+2. **Select Node Version & Install Dependencies**:
 
-Open [https://localhost:3000](https://localhost:3000) in your browser.
+   ```bash
+   # Switch to supported Node version
+   nvm use
+
+   # Install dependencies with strict engine validation
+   npm install
+   ```
+
+3. **Configure Local Environment**:
+
+   ```bash
+   cp .env.local.example .env.local
+   ```
+
+   Open `.env.local` and provide your `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, generated `NEXTAUTH_SECRET`, and free `DAYWALKER_API_KEY`.
+
+4. **Start Development Server with TLS**:
+   ```bash
+   npm run dev:secure
+   ```
+   Open [https://localhost:3000](https://localhost:3000) in your browser.
 
 ---
 
-## 🧪 6. Testing & Quality Assurance
+## 🧪 7. Testing, Quality Assurance & Linting
 
-### Run Full Quality & Type Validation:
+### Code Formatting & Linting Standards
+
+Sonalyze enforces automated code formatting via Prettier with Tailwind CSS class sorting, alongside ESLint flat configuration for static analysis and type safety:
+
+```bash
+# Check code formatting with Prettier
+npm run format:check
+
+# Auto-format all codebase files
+npm run format
+
+# Run ESLint static analysis
+npm run lint
+
+# Run TypeScript compiler type validation
+npm run typecheck
+```
+
+### Run Full Quality & Pre-Deployment Validation:
+
 ```bash
 npm run validate
 ```
 
 ### Run Unit Tests & Coverage (88% Covered):
+
 ```bash
 npm run test:coverage
 ```
 
 ### Run Playwright E2E Tests:
+
 ```bash
 npm run test:e2e
 ```
 
 ---
 
-## ☁️ 7. DigitalOcean App Platform Deployment
+## ☁️ 8. DigitalOcean App Platform Deployment
 
 The repository is configured with a hardened, multi-stage `Dockerfile` (`output: "standalone"`).
 
@@ -271,9 +365,10 @@ The repository is configured with a hardened, multi-stage `Dockerfile` (`output:
 
 [![Deploy to DigitalOcean](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/Shelbyb/sonalyze/tree/main)
 
-The button uses [`.do/deploy.template.yaml`](./.do/deploy.template.yaml). Before deploying you need the Spotify credentials (section 1), a Daywalker API key (section 2), and a registered signing key pair from `DAYWALKER_SIGNING_KEY` + `DAYWALKER_KEY_ID` (section 4). Fill in the secrets when prompted, then add the app's callback URL (`https://<your_app_domain>/api/auth/callback/spotify`) in the Spotify Developer Dashboard. Fork the repo and edit `repo:` in the template to deploy your own copy.
+The button uses [`.do/deploy.template.yaml`](./.do/deploy.template.yaml). Before deploying you need the Spotify credentials (section 1), a Last.fm API key if desired (section 2), a Daywalker API key (section 3), and a registered signing key pair from `DAYWALKER_SIGNING_KEY` + `DAYWALKER_KEY_ID` (section 5). Fill in the secrets when prompted, then add the app's callback URL (`https://<your_app_domain>/api/auth/callback/spotify`) in the Spotify Developer Dashboard. Fork the repo and edit `repo:` in the template to deploy your own copy.
 
 ### Deploy via Control Panel or doctl CLI
+
 1. Push this repository to your GitHub repo (`<username>/<repository_name>`).
 2. DigitalOcean App Platform automatically builds the multi-stage Docker image and executes health checks against `/api/health` before routing live traffic.
 3. Under **Environment Variables**, configure:
@@ -289,7 +384,7 @@ The button uses [`.do/deploy.template.yaml`](./.do/deploy.template.yaml). Before
 
 ---
 
-## 🔒 8. Security & Hardening Safeguards
+## 🔒 9. Security & Hardening Safeguards
 
 - **Stateless Cookies**: Zero server-side session persistence. Sessions and Spotify tokens never touch a database. In Postgres mode only profile, preferences, history snapshots and tags are stored.
 - **Strict Content Security & Headers**:
@@ -303,7 +398,7 @@ The button uses [`.do/deploy.template.yaml`](./.do/deploy.template.yaml). Before
 
 ---
 
-## 🩺 9. Troubleshooting
+## 🩺 10. Troubleshooting
 
 ### "No active key '<key id>' is registered for this service"
 

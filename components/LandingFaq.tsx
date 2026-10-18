@@ -38,29 +38,29 @@ export default function LandingFaq() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl divide-y divide-white/8 rounded-2xl border border-white/8 bg-panel/40 p-2 sm:p-4 backdrop-blur">
+    <div className="bg-panel/40 mx-auto max-w-3xl divide-y divide-white/8 rounded-2xl border border-white/8 p-2 backdrop-blur sm:p-4">
       {faqs.map((faq, idx) => {
         const isOpen = openIndex === idx;
         return (
           <div key={idx} className="py-3">
             <button
               onClick={() => toggle(idx)}
-              className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left font-display text-base font-semibold text-cream transition-colors hover:text-accent focus:outline-none"
+              className="font-display text-cream hover:text-accent flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-base font-semibold transition-colors focus:outline-none"
               aria-expanded={isOpen}
             >
               <span className="flex items-center gap-3">
-                <HelpCircle className="h-4 w-4 shrink-0 text-accent" />
+                <HelpCircle className="text-accent h-4 w-4 shrink-0" />
                 {faq.q}
               </span>
               <ChevronDown
-                className={`h-5 w-5 shrink-0 text-muted transition-transform duration-300 ${
-                  isOpen ? 'rotate-180 text-accent' : ''
+                className={`text-muted h-5 w-5 shrink-0 transition-transform duration-300 ${
+                  isOpen ? 'text-accent rotate-180' : ''
                 }`}
               />
             </button>
             {isOpen && (
-              <div className="px-4 pb-4 pt-1 text-sm leading-relaxed text-muted animate-rise">
-                <div className="border-l-2 border-accent/40 pl-4 text-muted/90">
+              <div className="text-muted animate-rise px-4 pt-1 pb-4 text-sm leading-relaxed">
+                <div className="border-accent/40 text-muted/90 border-l-2 pl-4">
                   {faq.a}
                 </div>
               </div>

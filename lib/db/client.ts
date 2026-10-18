@@ -1,11 +1,11 @@
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
-import * as schema from "./schema";
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import * as schema from './schema';
 import {
   assertSdkIntact,
   requireServiceAuth,
   requireServiceLicense,
-} from "@/lib/daywalker-auth";
+} from '@/lib/daywalker-auth';
 
 type Db = ReturnType<typeof drizzle<typeof schema>>;
 
@@ -17,8 +17,8 @@ const AUTH_CACHE_TTL_MS = 60_000;
  * Cached for 60 seconds; skipped only outside a server runtime and during production build phase.
  */
 export async function assertServiceAuthorized(): Promise<void> {
-  if (typeof window !== "undefined") return;
-  if (process.env.NEXT_PHASE === "phase-production-build") return;
+  if (typeof window !== 'undefined') return;
+  if (process.env.NEXT_PHASE === 'phase-production-build') return;
 
   const now = Date.now();
   if (now - lastAuthorizedTime < AUTH_CACHE_TTL_MS) {
@@ -63,8 +63,7 @@ export function getReadDb(): Db | null {
   assertServiceAuthorized();
   const url = process.env.DATABASE_READ_URL;
   if (!url) return getDb();
-  if (!globalForDb.__sonalyzeReadDb)
-    globalForDb.__sonalyzeReadDb = connect(url);
+  if (!globalForDb.__sonalyzeReadDb) globalForDb.__sonalyzeReadDb = connect(url);
   return globalForDb.__sonalyzeReadDb;
 }
 
@@ -73,7 +72,7 @@ export async function isDbReachable(): Promise<boolean> {
   const db = getDb();
   if (!db) return false;
   try {
-    await db.execute("select 1" as any);
+    await db.execute('select 1' as any);
     return true;
   } catch {
     return false;

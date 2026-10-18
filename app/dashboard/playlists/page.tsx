@@ -38,7 +38,7 @@ export default function PlaylistsPage() {
         (p) =>
           p.name?.toLowerCase().includes(q) ||
           p.owner?.display_name?.toLowerCase().includes(q) ||
-          p.description?.toLowerCase().includes(q)
+          p.description?.toLowerCase().includes(q),
       );
     }
 
@@ -60,7 +60,7 @@ export default function PlaylistsPage() {
         action={
           <Link
             href="/dashboard/discover"
-            className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-black transition-transform hover:scale-105 active:scale-95 shadow-md shadow-accent/20"
+            className="bg-accent shadow-accent/20 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-black shadow-md transition-transform hover:scale-105 active:scale-95"
           >
             <Wand2 className="h-4 w-4" /> Generate mix
           </Link>
@@ -71,27 +71,29 @@ export default function PlaylistsPage() {
 
       {/* Control Bar: Search & Privacy Filter */}
       {playlists && playlists.length > 0 && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/8 bg-panel/30 p-3 backdrop-blur">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+        <div className="bg-panel/30 flex flex-col gap-3 rounded-2xl border border-white/8 p-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-sm flex-1">
+            <Search className="text-subtle absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search playlists…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-white/8 bg-elevated/80 pl-9 pr-3 py-1.5 text-xs text-cream placeholder-subtle outline-none focus:border-accent/40"
+              className="bg-elevated/80 text-cream placeholder-subtle focus:border-accent/40 w-full rounded-xl border border-white/8 py-1.5 pr-3 pl-9 text-xs outline-none"
             />
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-subtle uppercase mr-1">Type:</span>
+            <span className="text-subtle mr-1 text-[11px] font-semibold uppercase">
+              Type:
+            </span>
             {(['all', 'public', 'private'] as PrivacyFilter[]).map((type) => (
               <button
                 key={type}
                 onClick={() => setPrivacyFilter(type)}
                 className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize transition-colors ${
                   privacyFilter === type
-                    ? 'bg-accent text-black font-semibold'
+                    ? 'bg-accent font-semibold text-black'
                     : 'bg-elevated text-muted hover:text-cream'
                 }`}
               >
@@ -108,10 +110,10 @@ export default function PlaylistsPage() {
           {Array.from({ length: 10 }).map((_, i) => (
             <div
               key={i}
-              className="flex animate-pulse flex-col rounded-2xl border border-white/8 bg-panel/50 p-4"
+              className="bg-panel/50 flex animate-pulse flex-col rounded-2xl border border-white/8 p-4"
             >
-              <div className="aspect-square w-full rounded-lg bg-white/10 mb-4" />
-              <div className="h-4 w-3/4 rounded bg-white/10 mb-2" />
+              <div className="mb-4 aspect-square w-full rounded-lg bg-white/10" />
+              <div className="mb-2 h-4 w-3/4 rounded bg-white/10" />
               <div className="h-3 w-1/2 rounded bg-white/5" />
             </div>
           ))}
@@ -136,22 +138,18 @@ export default function PlaylistsPage() {
         <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {filteredPlaylists.map((p) => {
             const img = p.images?.[0]?.url;
-            const spotifyUrl = p.external_urls?.spotify || `https://open.spotify.com/playlist/${p.id}`;
+            const spotifyUrl =
+              p.external_urls?.spotify || `https://open.spotify.com/playlist/${p.id}`;
             const trackCount = p.tracks?.total ?? 0;
             const name = p.name || 'Untitled Playlist';
             return (
               <div
                 key={p.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/8 bg-panel/50 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:bg-panel hover:shadow-xl"
+                className="group bg-panel/50 hover:border-accent/40 hover:bg-panel relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/8 p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
                 <div>
-                  <a
-                    href={spotifyUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block"
-                  >
-                    <div className="relative mb-4 aspect-square w-full overflow-hidden rounded-lg bg-elevated2 shadow ring-1 ring-white/10 group-hover:ring-accent/40 transition-all">
+                  <a href={spotifyUrl} target="_blank" rel="noreferrer" className="block">
+                    <div className="bg-elevated2 group-hover:ring-accent/40 relative mb-4 aspect-square w-full overflow-hidden rounded-lg shadow ring-1 ring-white/10 transition-all">
                       {img ? (
                         <Image
                           src={img}
@@ -161,28 +159,32 @@ export default function PlaylistsPage() {
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-muted">
+                        <div className="text-muted flex h-full w-full items-center justify-center">
                           <ListMusic className="h-8 w-8" />
                         </div>
                       )}
                     </div>
-                    <h3 className="truncate font-display text-sm font-semibold tracking-tight text-cream group-hover:text-accent transition-colors">
+                    <h3 className="font-display text-cream group-hover:text-accent truncate text-sm font-semibold tracking-tight transition-colors">
                       {name}
                     </h3>
                   </a>
-                  <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-subtle">
-                    {p.public === false && <Lock className="h-3 w-3 shrink-0 text-amber-400" />}
-                    <span>{trackCount} {trackCount === 1 ? 'track' : 'tracks'}</span>
+                  <p className="text-subtle mt-1 flex items-center gap-1.5 truncate text-xs">
+                    {p.public === false && (
+                      <Lock className="h-3 w-3 shrink-0 text-amber-400" />
+                    )}
+                    <span>
+                      {trackCount} {trackCount === 1 ? 'track' : 'tracks'}
+                    </span>
                     {p.owner?.display_name && (
                       <span className="truncate">· by {p.owner.display_name}</span>
                     )}
                   </p>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between pt-3 border-t border-white/5">
+                <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-3">
                   <Link
                     href={`/dashboard/discover`}
-                    className="flex items-center gap-1 text-[11px] font-semibold text-accent hover:underline"
+                    className="text-accent flex items-center gap-1 text-[11px] font-semibold hover:underline"
                   >
                     <Wand2 className="h-3 w-3" />
                     <span>Seed Mix</span>

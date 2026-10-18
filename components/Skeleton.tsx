@@ -16,7 +16,7 @@ export function TrackRowSkeleton() {
 
 export function TrackListSkeleton({ count = 5 }: { count?: number }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-panel/40 p-2 space-y-1">
+    <div className="bg-panel/40 space-y-1 rounded-2xl border border-white/8 p-2">
       {Array.from({ length: count }).map((_, i) => (
         <TrackRowSkeleton key={i} />
       ))}
@@ -26,7 +26,7 @@ export function TrackListSkeleton({ count = 5 }: { count?: number }) {
 
 export function ArtistCardSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col overflow-hidden rounded-2xl border border-white/8 bg-panel/50 p-4">
+    <div className="bg-panel/50 flex animate-pulse flex-col overflow-hidden rounded-2xl border border-white/8 p-4">
       <div className="relative mb-4 aspect-square w-full rounded-full bg-white/10" />
       <div className="mx-auto h-4 w-3/4 rounded bg-white/10" />
       <div className="mx-auto mt-2 h-3 w-1/2 rounded bg-white/5" />
@@ -46,7 +46,7 @@ export function ArtistGridSkeleton({ count = 5 }: { count?: number }) {
 
 export function StatCardSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col justify-between rounded-2xl border border-white/8 bg-panel/50 p-5">
+    <div className="bg-panel/50 flex animate-pulse flex-col justify-between rounded-2xl border border-white/8 p-5">
       <div className="flex items-center justify-between">
         <div className="h-4 w-24 rounded bg-white/5" />
         <div className="h-8 w-8 rounded-lg bg-white/10" />

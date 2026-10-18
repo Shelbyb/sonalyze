@@ -29,7 +29,7 @@ export function getMasterSecret(): string {
       baseSecret,
       Buffer.from(runtimeSecret, 'utf-8'),
       Buffer.from('sonalyze-runtime-secret-wrapper', 'utf-8'),
-      32
+      32,
     );
     return Buffer.from(derived).toString('hex');
   }
@@ -77,13 +77,12 @@ export function tryDecryptRaw(ciphertext: string, secretKey: string): string | n
     const tag = Buffer.from(tagHex, 'hex');
     const encryptedData = Buffer.from(encryptedHex, 'hex');
 
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH });
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, {
+      authTagLength: AUTH_TAG_LENGTH,
+    });
     decipher.setAuthTag(tag);
 
-    const decrypted = Buffer.concat([
-      decipher.update(encryptedData),
-      decipher.final(),
-    ]);
+    const decrypted = Buffer.concat([decipher.update(encryptedData), decipher.final()]);
 
     return decrypted.toString('utf-8');
   } catch {
@@ -99,12 +98,11 @@ export function encrypt(plaintext: string, secretKey = getMasterSecret()): strin
   if (!plaintext) return plaintext;
   const key = deriveKey(secretKey);
   const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH });
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv, {
+    authTagLength: AUTH_TAG_LENGTH,
+  });
 
-  const ciphertext = Buffer.concat([
-    cipher.update(plaintext, 'utf-8'),
-    cipher.final(),
-  ]);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf-8'), cipher.final()]);
   const tag = cipher.getAuthTag();
 
   return `${PREFIX}${iv.toString('hex')}:${tag.toString('hex')}:${ciphertext.toString('hex')}`;

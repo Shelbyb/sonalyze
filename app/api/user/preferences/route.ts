@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { users } from "@/lib/db/schema";
-import { requireUserDb } from "@/lib/storage/server";
+import { NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
+import { users } from '@/lib/db/schema';
+import { requireUserDb } from '@/lib/storage/server';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const ctx = await requireUserDb();
-  if ("error" in ctx) return ctx.error;
+  if ('error' in ctx) return ctx.error;
   const rows = await ctx.db
     .select()
     .from(users)
@@ -31,10 +31,10 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   const ctx = await requireUserDb();
-  if ("error" in ctx) return ctx.error;
+  if ('error' in ctx) return ctx.error;
   const body = await request.json().catch(() => null);
-  if (!body || typeof body !== "object") {
-    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
   }
   const { user, preferences } = body as {
     user?: Record<string, any>;

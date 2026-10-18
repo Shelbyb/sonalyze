@@ -16,12 +16,16 @@ test.describe('Sonalyze Landing Page', () => {
     await expect(loginButtons.first()).toBeVisible();
 
     // Check feature cards
-    await expect(page.getByRole('heading', { name: 'Top tracks & previews' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Top tracks & previews' }),
+    ).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Audio DNA' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Taste profile' })).toBeVisible();
   });
 
-  test('redirects unauthenticated users attempting to access dashboard to landing page', async ({ page }) => {
+  test('redirects unauthenticated users attempting to access dashboard to landing page', async ({
+    page,
+  }) => {
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/http:\/\/localhost:3000\/?$/);
   });

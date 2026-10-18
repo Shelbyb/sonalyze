@@ -50,7 +50,15 @@ if ! npm run lint; then
 fi
 echo "   ✅ ESLint verified with 0 issues"
 
-# 4. Enforce Unit Test Suite
+# 4. Enforce Prettier Formatting
+echo "💅 [pre-commit] Enforcing Prettier formatting standards..."
+if ! npm run format:check; then
+  echo "❌ [pre-commit] Prettier format check failed! Run 'npm run format' to reformat files."
+  exit 1
+fi
+echo "   ✅ Prettier formatting verified"
+
+# 5. Enforce Unit Test Suite
 echo "🧪 [pre-commit] Running unit test suite..."
 if ! npm test; then
   echo "❌ [pre-commit] Unit tests failed! Please ensure all tests pass before committing."

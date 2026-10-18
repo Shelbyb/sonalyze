@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, act, renderHook } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import React from 'react';
 import { useUserStore } from '@/lib/stores/useUserStore';
 import UserStoreSync from '@/components/UserStoreSync';

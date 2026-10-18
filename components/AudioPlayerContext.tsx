@@ -1,6 +1,13 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+} from 'react';
 import type { SpotifyTrack } from '@/types/spotify';
 import { useUserStore } from '@/lib/stores/useUserStore';
 
@@ -105,7 +112,8 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
       if (track.preview_url) {
         audio.src = track.preview_url;
         audio.volume = isMuted ? 0 : volume;
-        audio.play()
+        audio
+          .play()
           .then(() => setIsPlaying(true))
           .catch(() => setIsPlaying(false));
       } else {
@@ -113,7 +121,7 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
         setIsPlaying(false);
       }
     },
-    [currentTrack, isPlaying, isMuted, volume]
+    [currentTrack, isPlaying, isMuted, volume],
   );
 
   const togglePlay = useCallback(() => {
@@ -155,7 +163,7 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
         setIsMuted(false);
       }
     },
-    [isMuted]
+    [isMuted],
   );
 
   const toggleMute = useCallback(() => {

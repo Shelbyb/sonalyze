@@ -5,7 +5,11 @@ import MobileNav from '@/components/MobileNav';
 
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const session = await getAuthSession();
 
   if (!session || session.error) {
@@ -15,7 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const user = session!.user;
 
   return (
-    <div className="min-h-screen bg-base">
+    <div className="bg-base min-h-screen">
       <Sidebar userName={user?.name} userImage={user?.image} />
       <MobileNav />
       <div className="lg:pl-60">

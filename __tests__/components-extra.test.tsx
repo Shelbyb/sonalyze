@@ -21,7 +21,7 @@ import LandingHeroPreview from '@/components/LandingHeroPreview';
 import LandingFaq from '@/components/LandingFaq';
 import * as spotifyLib from '@/lib/spotify';
 import { signIn, signOut } from 'next-auth/react';
-import type { SpotifyTrack, SpotifyPlaylist } from '@/types/spotify';
+import type { SpotifyTrack } from '@/types/spotify';
 
 describe('Extra Components and Edge Cases', () => {
   it('renders LoginButton in both sizes and triggers signIn', () => {
@@ -36,7 +36,7 @@ describe('Extra Components and Edge Cases', () => {
   });
 
   it('renders SpotifyIcon standalone', () => {
-    const { container } = render(<SpotifyIcon className="w-5 h-5" />);
+    const { container } = render(<SpotifyIcon className="h-5 w-5" />);
     expect(container.querySelector('svg')).toBeInTheDocument();
   });
 
@@ -64,7 +64,7 @@ describe('Extra Components and Edge Cases', () => {
         <ArtistCardSkeleton />
         <ArtistGridSkeleton count={2} />
         <StatCardSkeleton />
-      </div>
+      </div>,
     );
     expect(screen.getAllByRole('generic').length).toBeGreaterThan(5);
   });
@@ -73,7 +73,7 @@ describe('Extra Components and Edge Cases', () => {
     render(
       <Providers>
         <span data-testid="child-element">Child content</span>
-      </Providers>
+      </Providers>,
     );
     expect(screen.getByTestId('child-element')).toBeInTheDocument();
   });
@@ -83,7 +83,11 @@ describe('Extra Components and Edge Cases', () => {
       id: 't-preview',
       name: 'Karma Police',
       artists: [{ id: 'a1', name: 'Radiohead' }],
-      album: { id: 'alb1', name: 'OK Computer', images: [{ url: 'https://example.com/art.jpg' }] },
+      album: {
+        id: 'alb1',
+        name: 'OK Computer',
+        images: [{ url: 'https://example.com/art.jpg' }],
+      },
       duration_ms: 240000,
       preview_url: 'https://p.scdn.co/preview.mp3',
       external_urls: { spotify: 'https://open.spotify.com/track/t-preview' },
@@ -114,7 +118,9 @@ describe('Extra Components and Edge Cases', () => {
       return (
         <div>
           <button onClick={() => playTrack(trackWithPreview)}>Play With Preview</button>
-          <button onClick={() => playTrack(trackWithoutPreview)}>Play Without Preview</button>
+          <button onClick={() => playTrack(trackWithoutPreview)}>
+            Play Without Preview
+          </button>
           <button onClick={() => togglePlay()}>Toggle</button>
           <button onClick={() => seek(15)}>Seek 15</button>
           <button onClick={() => setVolume(0.5)}>Set Vol 0.5</button>
@@ -131,7 +137,7 @@ describe('Extra Components and Edge Cases', () => {
         <AudioPlayerProvider>
           <TestAudioControls />
           <GlobalPlayer />
-        </AudioPlayerProvider>
+        </AudioPlayerProvider>,
       );
     });
 
@@ -299,16 +305,24 @@ describe('Extra Components and Edge Cases', () => {
     render(<LandingFaq />);
 
     // First FAQ is open by default
-    expect(screen.getByText(/Sonalyze connects directly via official Spotify OAuth/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sonalyze connects directly via official Spotify OAuth/i),
+    ).toBeInTheDocument();
 
     // Click on another FAQ
-    const secondFaqBtn = screen.getByRole('button', { name: /Is my Spotify password or listening history stored on your servers\?/i });
+    const secondFaqBtn = screen.getByRole('button', {
+      name: /Is my Spotify password or listening history stored on your servers\?/i,
+    });
     fireEvent.click(secondFaqBtn);
-    expect(screen.getByText(/Sonalyze operates with a 100% stateless architecture/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sonalyze operates with a 100% stateless architecture/i),
+    ).toBeInTheDocument();
 
     // Collapse it
     fireEvent.click(secondFaqBtn);
-    expect(screen.queryByText(/Sonalyze operates with a 100% stateless architecture/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Sonalyze operates with a 100% stateless architecture/i),
+    ).not.toBeInTheDocument();
   });
 
   it('renders complete redesigned LandingPage structure', () => {
@@ -316,10 +330,14 @@ describe('Extra Components and Edge Cases', () => {
 
     // Check header & hero
     expect(screen.getAllByText('Sonalyze').length).toBeGreaterThan(0);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/See the shape of your sound/i);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      /See the shape of your sound/i,
+    );
 
     // Check feature sections
-    expect(screen.getByRole('heading', { name: 'Top tracks & previews' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Top tracks & previews' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Audio DNA' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Taste profile' })).toBeInTheDocument();
 
