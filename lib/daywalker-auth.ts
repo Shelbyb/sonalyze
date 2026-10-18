@@ -20,10 +20,6 @@ export {
 
 export { DaywalkerAuthError as ServiceAuthError };
 
-export interface TokenValidationResponse extends TokenPayload {
-  valid?: boolean;
-}
-
 export interface ServiceAuthResult {
   valid: boolean;
   status: number;
@@ -41,9 +37,6 @@ export interface ValidateServiceTokenOptions {
   req?: any;
   client?: Daywalker;
 }
-
-export const CACHE_TTL_MS = 60_000;
-export const REQUEST_TIMEOUT_MS = 5_000;
 
 function resolveSecretValue(rawValue: string | undefined | null): string | null {
   if (!rawValue) return null;
@@ -119,8 +112,6 @@ export function getClient(): Daywalker {
 export function clearServiceAuthCache(): void {
   activeClient = null;
 }
-
-export const clearDaywalkerAuthCache = clearServiceAuthCache;
 
 /**
  * Validates the service token with Daywalker Auth using the Daywalker SDK.

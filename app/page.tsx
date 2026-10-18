@@ -19,7 +19,6 @@ import {
   Sliders,
   CheckCircle2,
   Layers,
-  Activity,
   Globe2,
   ExternalLink,
 } from 'lucide-react';

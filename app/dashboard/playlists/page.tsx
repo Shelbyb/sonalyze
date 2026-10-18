@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ExternalLink, Lock, Wand2, Search, SlidersHorizontal, ListMusic } from 'lucide-react';
+import { ExternalLink, Lock, Wand2, Search, ListMusic } from 'lucide-react';
 import { getUserPlaylists } from '@/lib/spotify';
 import type { SpotifyPlaylist } from '@/types/spotify';
 import PageHeader from '@/components/PageHeader';

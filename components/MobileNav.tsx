@@ -16,6 +16,7 @@ import {
   Waves,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useUserStore } from '@/lib/stores/useUserStore';
 
 const links = [
   { href: '/dashboard', label: 'Overview', icon: LayoutGrid },
@@ -29,6 +30,12 @@ const links = [
 
 export default function MobileNav() {
   const pathname = usePathname();
+  const clearUser = useUserStore((s) => s.clearUser);
+
+  const handleLogout = async () => {
+    clearUser();
+    await signOut({ callbackUrl: '/' });
+  };
 
   return (
     <div className="sticky top-0 z-30 border-b border-white/8 bg-base/90 backdrop-blur lg:hidden">
@@ -40,8 +47,8 @@ export default function MobileNav() {
           <span className="font-display text-sm font-bold tracking-tight text-cream">Sonalyze</span>
         </Link>
         <button
-          onClick={() => signOut({ callbackUrl: '/' })}
-          className="flex items-center gap-1.5 text-xs font-medium text-muted hover:text-cream transition-colors"
+          onClick={handleLogout}
+          className="flex items-center gap-1.5 text-xs font-medium text-muted hover:text-cream transition-colors cursor-pointer"
         >
           <LogOut className="h-3.5 w-3.5" />
           Log out

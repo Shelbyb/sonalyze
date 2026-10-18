@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { Search, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Search, SlidersHorizontal } from 'lucide-react';
 import { getTopArtists } from '@/lib/spotify';
 import type { SpotifyArtist, TimeRange } from '@/types/spotify';
 import PageHeader from '@/components/PageHeader';
@@ -10,6 +10,7 @@ import ArtistCard from '@/components/ArtistCard';
 import TimeRangeTabs from '@/components/TimeRangeTabs';
 import { ArtistGridSkeleton } from '@/components/Skeleton';
 import { ErrorState, EmptyState } from '@/components/StateViews';
+import { useUserStore } from '@/lib/stores/useUserStore';
 
 type SortOption = 'rank' | 'name' | 'popularity';
 
@@ -17,7 +18,9 @@ export default function TopArtistsPage() {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken as string | undefined;
 
-  const [range, setRange] = useState<TimeRange>('medium_term');
+  const defaultRange = useUserStore((s) => s.preferences.defaultTimeRange);
+  const setDefaultTimeRange = useUserStore((s) => s.setDefaultTimeRange);
+  const [range, setRange] = useState<TimeRange>(defaultRange);
   const [artists, setArtists] = useState<SpotifyArtist[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,7 +86,15 @@ export default function TopArtistsPage() {
         eyebrow="Your Library"
         title="Top artists"
         description="The artists you keep coming back to, ranked by Spotify frequency with genre breakdowns."
-        action={<TimeRangeTabs value={range} onChange={setRange} />}
+        action={
+          <TimeRangeTabs
+            value={range}
+            onChange={(r) => {
+              setRange(r);
+              setDefaultTimeRange(r);
+            }}
+          />
+        }
       />
 
       {error && <ErrorState message="Couldn't load your top artists." hint={error} />}

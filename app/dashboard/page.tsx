@@ -9,7 +9,6 @@ import {
   Music2,
   History,
   Wand2,
-  Compass,
   Sparkles,
   Flame,
   Radio,
@@ -23,9 +22,11 @@ import TrackRow from '@/components/TrackRow';
 import StatCard from '@/components/StatCard';
 import { TrackListSkeleton, ArtistGridSkeleton, StatCardSkeleton } from '@/components/Skeleton';
 import { ErrorState } from '@/components/StateViews';
+import { useUserStore } from '@/lib/stores/useUserStore';
 
 export default function DashboardOverview() {
   const { data: session } = useSession();
+  const storeUser = useUserStore((s) => s.user);
   const token = (session as any)?.accessToken as string | undefined;
 
   const [artists, setArtists] = useState<SpotifyArtist[] | null>(null);
@@ -90,7 +91,7 @@ export default function DashboardOverview() {
     };
   }, [artists, tracks, recent]);
 
-  const name = session?.user?.name?.split(' ')[0];
+  const name = (storeUser?.name || session?.user?.name)?.split(' ')[0];
 
   return (
     <div className="space-y-10">

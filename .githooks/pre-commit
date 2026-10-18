@@ -58,41 +58,5 @@ if ! npm test; then
 fi
 echo "   ✅ All unit tests passed"
 
-# 5. Pull down latest DigitalOcean App Platform spec to ensure sync before committing
-SPEC_FILE=".do/app.yaml"
-APP_NAME="sonalyze"
-
-echo "☁️  [pre-commit] Checking DigitalOcean App Platform configuration..."
-
-if command -v doctl &> /dev/null && doctl account get &> /dev/null; then
-  APP_ID=$(doctl apps list --format ID,Spec.Name --no-header 2>/dev/null | awk -v name="$APP_NAME" '$2 == name {print $1; exit}')
-  if [ -z "$APP_ID" ]; then
-    APP_ID=$(doctl apps list -o json 2>/dev/null | grep -B 2 "\"name\": \"$APP_NAME\"" | grep -o '"id": "[^"]*"' | head -n 1 | cut -d'"' -f4)
-  fi
-
-  if [ -n "$APP_ID" ]; then
-    echo "   ⬇️  Pulling latest DigitalOcean app spec for '$APP_NAME' ($APP_ID)..."
-    mkdir -p .do
-    TMP_SPEC=$(mktemp)
-    
-    if doctl apps spec get "$APP_ID" --format yaml > "$TMP_SPEC" 2>/dev/null && [ -s "$TMP_SPEC" ]; then
-      if [ ! -f "$SPEC_FILE" ] || ! cmp -s "$TMP_SPEC" "$SPEC_FILE"; then
-        mv "$TMP_SPEC" "$SPEC_FILE"
-        echo "   ✅ Updated $SPEC_FILE with latest remote DigitalOcean configuration."
-      else
-        echo "   ✅ $SPEC_FILE is already up to date with DigitalOcean."
-        rm -f "$TMP_SPEC"
-      fi
-    else
-      echo "   ⚠️  Could not fetch spec from DigitalOcean. Proceeding with existing local file."
-      rm -f "$TMP_SPEC"
-    fi
-  else
-    echo "   ℹ️  App '$APP_NAME' not found on DigitalOcean. Proceeding with existing local spec."
-  fi
-else
-  echo "   ℹ️  doctl CLI not installed or unauthenticated. Skipping remote spec check."
-fi
-
 echo "✨ [pre-commit] All pre-commit checks passed successfully!"
 exit 0

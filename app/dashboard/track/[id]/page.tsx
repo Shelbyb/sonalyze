@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -12,11 +12,6 @@ import {
   Play,
   Pause,
   Wand2,
-  Activity,
-  Sparkles,
-  Gauge,
-  Key,
-  Volume2,
 } from 'lucide-react';
 import {
   Radar,
@@ -59,18 +54,10 @@ const STAT_LABELS: { key: keyof AudioFeatures; label: string; hint: string }[] =
   { key: 'speechiness', label: 'Speechiness', hint: 'Presence of spoken words like rap or podcast' },
 ];
 
-function formatDuration(ms: number) {
-  const totalSeconds = Math.round(ms / 1000);
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
 export default function TrackDetailPage() {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken as string | undefined;
   const params = useParams();
-  const router = useRouter();
   const trackId = Array.isArray(params?.id) ? params?.id[0] : params?.id;
 
   const { currentTrack, isPlaying, playTrack } = useAudioPlayer();

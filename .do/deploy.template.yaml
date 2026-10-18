@@ -1,0 +1,47 @@
+spec:
+  name: sonalyze
+  region: nyc
+  services:
+    - name: web
+      dockerfile_path: Dockerfile
+      source_dir: /
+      github:
+        repo: Shelbyb/sonalyze
+        branch: main
+        deploy_on_push: true
+      http_port: 3000
+      instance_count: 1
+      instance_size_slug: basic-xxs
+      health_check:
+        http_path: /api/health
+        initial_delay_seconds: 10
+        period_seconds: 15
+        timeout_seconds: 5
+        failure_threshold: 3
+      envs:
+        - key: NODE_ENV
+          value: production
+          scope: RUN_TIME
+        - key: NEXTAUTH_URL
+          value: ${APP_URL}
+          scope: RUN_AND_BUILD_TIME
+        - key: NEXTAUTH_SECRET
+          scope: RUN_AND_BUILD_TIME
+          type: SECRET
+        - key: SPOTIFY_CLIENT_ID
+          scope: RUN_AND_BUILD_TIME
+          type: SECRET
+        - key: SPOTIFY_CLIENT_SECRET
+          scope: RUN_AND_BUILD_TIME
+          type: SECRET
+        - key: DAYWALKER_API_KEY
+          scope: RUN_AND_BUILD_TIME
+          type: SECRET
+        - key: DAYWALKER_SIGNING_KEY
+          scope: RUN_TIME
+          type: SECRET
+        - key: DAYWALKER_KEY_ID
+          scope: RUN_TIME
+        - key: DAYWALKER_SIGNING_DOMAIN
+          value: ${APP_DOMAIN}
+          scope: RUN_TIME

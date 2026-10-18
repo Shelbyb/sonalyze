@@ -1,6 +1,5 @@
 import React from 'react';
 import { TrackListSkeleton, StatCardSkeleton } from '@/components/Skeleton';
-import EqBars from '@/components/EqBars';
 
 export default function DashboardLoading() {
   return (

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import type { SpotifyTrack } from '@/types/spotify';
+import { useUserStore } from '@/lib/stores/useUserStore';
 
 interface AudioPlayerContextType {
   currentTrack: SpotifyTrack | null;
@@ -27,7 +28,13 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(30);
-  const [volume, setVolumeState] = useState(0.8);
+  const [volume, setVolumeState] = useState(() => {
+    try {
+      return useUserStore.getState().preferences?.volume ?? 0.8;
+    } catch {
+      return 0.8;
+    }
+  });
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -136,6 +143,11 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
       const audio = audioRef.current;
       const clamped = Math.max(0, Math.min(1, val));
       setVolumeState(clamped);
+      try {
+        useUserStore.getState().setVolume(clamped);
+      } catch {
+        // Ignore if store is inaccessible during early lifecycle
+      }
       if (audio) {
         audio.volume = isMuted ? 0 : clamped;
       }

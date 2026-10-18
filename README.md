@@ -231,6 +231,12 @@ npm run test:e2e
 
 The repository is configured with a hardened, multi-stage `Dockerfile` (`output: "standalone"`).
 
+### One-Click Deploy
+
+[![Deploy to DigitalOcean](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/Shelbyb/sonalyze/tree/main)
+
+The button uses [`.do/deploy.template.yaml`](./.do/deploy.template.yaml). Before deploying you need the Spotify credentials (section 1), a Daywalker API key (section 2), and a registered signing key pair from `DAYWALKER_SIGNING_KEY` + `DAYWALKER_KEY_ID` (section 4). Fill in the secrets when prompted, then add the app's callback URL (`https://<your_app_domain>/api/auth/callback/spotify`) in the Spotify Developer Dashboard. Fork the repo and edit `repo:` in the template to deploy your own copy.
+
 ### Deploy via Control Panel or doctl CLI
 1. Push this repository to your GitHub repo (`<username>/<repository_name>`).
 2. DigitalOcean App Platform automatically builds the multi-stage Docker image and executes health checks against `/api/health` before routing live traffic.

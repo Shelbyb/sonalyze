@@ -16,6 +16,7 @@ import {
   Waves,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useUserStore } from '@/lib/stores/useUserStore';
 
 const links = [
   { href: '/dashboard', label: 'Overview', icon: LayoutGrid },
@@ -35,6 +36,16 @@ export default function Sidebar({
   userImage?: string | null;
 }) {
   const pathname = usePathname();
+  const storeUser = useUserStore((s) => s.user);
+  const clearUser = useUserStore((s) => s.clearUser);
+
+  const effectiveName = storeUser?.name ?? userName ?? 'Listener';
+  const effectiveImage = storeUser?.image ?? userImage ?? null;
+
+  const handleLogout = async () => {
+    clearUser();
+    await signOut({ callbackUrl: '/' });
+  };
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-white/8 bg-panel/60 backdrop-blur lg:flex">
@@ -69,18 +80,18 @@ export default function Sidebar({
       <div className="border-t border-white/8 px-3 py-4">
         <div className="flex items-center gap-3 rounded-lg px-3 py-2">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-elevated2 text-xs font-bold text-accent ring-1 ring-white/10">
-            {userImage ? (
+            {effectiveImage ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={userImage} alt="" className="h-full w-full object-cover" />
+              <img src={effectiveImage} alt="" className="h-full w-full object-cover" />
             ) : (
-              (userName ?? '?').charAt(0).toUpperCase()
+              effectiveName.charAt(0).toUpperCase()
             )}
           </div>
-          <span className="truncate text-sm font-medium text-cream">{userName ?? 'Listener'}</span>
+          <span className="truncate text-sm font-medium text-cream">{effectiveName}</span>
         </div>
         <button
-          onClick={() => signOut({ callbackUrl: '/' })}
-          className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-elevated/60 hover:text-cream"
+          onClick={handleLogout}
+          className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-elevated/60 hover:text-cream cursor-pointer"
         >
           <LogOut className="h-4 w-4" strokeWidth={2} />
           Log out

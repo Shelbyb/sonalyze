@@ -8,7 +8,6 @@ import {
   PlusCircle,
   CheckCircle2,
   SlidersHorizontal,
-  Music2,
 } from 'lucide-react';
 import { getTopTracks, getMe, createPlaylistWithTracks } from '@/lib/spotify';
 import type { SpotifyTrack, TimeRange } from '@/types/spotify';
@@ -17,6 +16,7 @@ import TrackRow from '@/components/TrackRow';
 import TimeRangeTabs from '@/components/TimeRangeTabs';
 import { TrackListSkeleton } from '@/components/Skeleton';
 import { ErrorState, EmptyState } from '@/components/StateViews';
+import { useUserStore } from '@/lib/stores/useUserStore';
 
 type SortOption = 'rank' | 'name' | 'artist' | 'duration' | 'popularity';
 
@@ -24,7 +24,9 @@ export default function TopTracksPage() {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken as string | undefined;
 
-  const [range, setRange] = useState<TimeRange>('medium_term');
+  const defaultRange = useUserStore((s) => s.preferences.defaultTimeRange);
+  const setDefaultTimeRange = useUserStore((s) => s.setDefaultTimeRange);
+  const [range, setRange] = useState<TimeRange>(defaultRange);
   const [tracks, setTracks] = useState<SpotifyTrack[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -134,7 +136,15 @@ export default function TopTracksPage() {
         eyebrow="Your Library"
         title="Top tracks"
         description="Your most-played songs with audio preview streaming, detailed audio DNA radars, and CSV export."
-        action={<TimeRangeTabs value={range} onChange={setRange} />}
+        action={
+          <TimeRangeTabs
+            value={range}
+            onChange={(r) => {
+              setRange(r);
+              setDefaultTimeRange(r);
+            }}
+          />
+        }
       />
 
       {error && <ErrorState message="Couldn't load your top tracks." hint={error} />}

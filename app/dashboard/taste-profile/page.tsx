@@ -20,6 +20,7 @@ import type { TimeRange } from '@/types/spotify';
 import PageHeader from '@/components/PageHeader';
 import TimeRangeTabs from '@/components/TimeRangeTabs';
 import { LoadingState, ErrorState } from '@/components/StateViews';
+import { useUserStore } from '@/lib/stores/useUserStore';
 
 const GREEN_SHADES = ['#1ed760', '#1db954', '#17a34a', '#0f7a37', '#0a5c2a', '#083f1c'];
 
@@ -36,7 +37,9 @@ export default function TasteProfilePage() {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken as string | undefined;
 
-  const [range, setRange] = useState<TimeRange>('medium_term');
+  const defaultRange = useUserStore((s) => s.preferences.defaultTimeRange);
+  const setDefaultTimeRange = useUserStore((s) => s.setDefaultTimeRange);
+  const [range, setRange] = useState<TimeRange>(defaultRange);
   const [genreData, setGenreData] = useState<{ genre: string; count: number }[] | null>(null);
   const [radarData, setRadarData] = useState<{ stat: string; value: number }[] | null>(null);
   const [featuresUnavailable, setFeaturesUnavailable] = useState(false);
@@ -153,7 +156,15 @@ export default function TasteProfilePage() {
         eyebrow="Analysis"
         title="Taste profile"
         description="Your genre spread and sonic tendencies, analyzed from your top artists and audio features."
-        action={<TimeRangeTabs value={range} onChange={setRange} />}
+        action={
+          <TimeRangeTabs
+            value={range}
+            onChange={(r) => {
+              setRange(r);
+              setDefaultTimeRange(r);
+            }}
+          />
+        }
       />
 
       {error && <ErrorState message="Couldn't build your taste profile." hint={error} />}

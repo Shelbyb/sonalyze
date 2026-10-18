@@ -50,5 +50,8 @@ pnpm-debug.log*
 
 # Vercel & DigitalOcean local caches and specs
 .vercel
-.do/
-.do
+.do/*
+!.do/deploy.template.yaml
+
+# Internal SDK integration guide
+DAYWALKER_SDK_INTEGRATION.md

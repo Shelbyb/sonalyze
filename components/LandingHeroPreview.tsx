@@ -2,14 +2,11 @@
 
 import { useState } from 'react';
 import {
-  Activity,
   Play,
   Volume2,
   Sparkles,
-  Zap,
   Flame,
   Radio,
-  Sliders,
   CheckCircle2,
 } from 'lucide-react';
 import EqBars from './EqBars';

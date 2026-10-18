@@ -8,7 +8,10 @@ describe('Auth Configuration & Callbacks', () => {
 
   it('configures JWT session strategy and Spotify provider', () => {
     expect(authOptions.session?.strategy).toBe('jwt');
+    expect(authOptions.session?.maxAge).toBe(30 * 24 * 60 * 60);
+    expect(authOptions.jwt?.maxAge).toBe(30 * 24 * 60 * 60);
     expect(authOptions.pages?.signIn).toBe('/');
+    expect(authOptions.pages?.error).toBe('/error');
     expect(authOptions.providers.length).toBeGreaterThan(0);
   });
 
@@ -84,6 +87,7 @@ describe('Auth Configuration & Callbacks', () => {
     const mockToken: any = {
       accessToken: 'token_xyz',
       spotifyId: 'user_xyz',
+      accessTokenExpires: 1800000000000,
       error: undefined,
     };
 
@@ -97,5 +101,6 @@ describe('Auth Configuration & Callbacks', () => {
 
     expect(result.accessToken).toBe('token_xyz');
     expect(result.spotifyId).toBe('user_xyz');
+    expect(result.accessTokenExpires).toBe(1800000000000);
   });
 });

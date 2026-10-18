@@ -62,10 +62,17 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   // No database: sessions are JSON Web Tokens stored entirely in an
-  // encrypted browser cookie. Nothing is persisted server-side.
-  session: { strategy: 'jwt' },
+  // encrypted browser cookie. Session lasts 30 days.
+  session: {
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
   pages: {
     signIn: '/',
+    error: '/error',
   },
   callbacks: {
     async signIn() {
@@ -96,6 +103,7 @@ export const authOptions: NextAuthOptions = {
       (session as any).accessToken = (token as any).accessToken;
       (session as any).error = (token as any).error;
       (session as any).spotifyId = (token as any).spotifyId;
+      (session as any).accessTokenExpires = (token as any).accessTokenExpires;
       return session;
     },
   },

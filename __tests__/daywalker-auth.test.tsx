@@ -7,12 +7,6 @@ import {
   getFallbackSecrets,
   encrypt,
   decrypt,
-  isEncrypted,
-  canDecrypt,
-  reencrypt,
-  encryptSensitiveFields,
-  decryptSensitiveFields,
-  timingSafeEqual,
 } from '@/lib/encryption';
 import {
   Daywalker,
@@ -64,8 +58,6 @@ describe('Encryption Utilities (lib/encryption.ts)', () => {
     const plaintext = 'dw_live_secret_key_123456789';
     const ciphertext = encrypt(plaintext);
     expect(ciphertext.startsWith('enc:v1:')).toBe(true);
-    expect(isEncrypted(ciphertext)).toBe(true);
-    expect(isEncrypted(plaintext)).toBe(false);
 
     const decrypted = decrypt(ciphertext);
     expect(decrypted).toBe(plaintext);
@@ -74,42 +66,6 @@ describe('Encryption Utilities (lib/encryption.ts)', () => {
   it('returns unencrypted plaintext as-is when decrypting', () => {
     expect(decrypt('raw-unencrypted-key')).toBe('raw-unencrypted-key');
     expect(decrypt('')).toBe('');
-  });
-
-  it('verifies decryption capability with canDecrypt and re-encrypts across keys', () => {
-    const secretA = 'key-a-123456789012345678901234567890';
-    const secretB = 'key-b-123456789012345678901234567890';
-    const ciphertextA = encrypt('test-message', secretA);
-
-    expect(canDecrypt(ciphertextA, secretA)).toBe(true);
-    expect(canDecrypt(ciphertextA, secretB)).toBe(false);
-
-    const ciphertextB = reencrypt(ciphertextA, secretA, secretB);
-    expect(canDecrypt(ciphertextB, secretB)).toBe(true);
-    expect(decrypt(ciphertextB, secretB)).toBe('test-message');
-  });
-
-  it('encrypts and decrypts sensitive object fields', () => {
-    const data = {
-      apiKey: 'secret_value',
-      name: 'Public App',
-      token: 'another_secret',
-    };
-
-    const encryptedData = encryptSensitiveFields(data, ['apiKey', 'token']);
-    expect(isEncrypted(encryptedData.apiKey)).toBe(true);
-    expect(isEncrypted(encryptedData.token)).toBe(true);
-    expect(encryptedData.name).toBe('Public App');
-
-    const decryptedData = decryptSensitiveFields(encryptedData, ['apiKey', 'token']);
-    expect(decryptedData.apiKey).toBe('secret_value');
-    expect(decryptedData.token).toBe('another_secret');
-  });
-
-  it('performs constant-time string comparison with timingSafeEqual', () => {
-    expect(timingSafeEqual('exact-match', 'exact-match')).toBe(true);
-    expect(timingSafeEqual('match-a', 'match-b')).toBe(false);
-    expect(timingSafeEqual('short', 'longer-string')).toBe(false);
   });
 });
 

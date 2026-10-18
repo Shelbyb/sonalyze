@@ -19,7 +19,9 @@ certificates
 .idea
 .vscode
 README.md
-.do
+DAYWALKER_SDK_INTEGRATION.md
+.do/*
+!.do/deploy.template.yaml
 .githooks
 .junie
 tsconfig.tsbuildinfo
