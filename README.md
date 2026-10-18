@@ -207,7 +207,7 @@ Leave `DATABASE_URL` unset. Nothing else is required.
 
 ### Postgres mode
 1. Start Postgres (for example `docker compose --profile postgres up -d db`).
-2. Set `DATABASE_URL=postgres://sonalyze:sonalyze@localhost:5432/sonalyze` in `.env.local`.
+2. Set `DATABASE_URL=postgres://<user>:<password>@localhost:5432/<database>` in `.env.local`.
 3. Run `node scripts/migrate.mjs` once for local development. Containers apply migrations automatically on start.
 
 Notes:
@@ -216,6 +216,7 @@ Notes:
 - Spotify tokens are never stored in the database. Rows are keyed by Spotify user id.
 - Existing `localStorage` data is not imported automatically. Preferences sync from the database after the first login.
 - Set `DATABASE_READ_URL` to route read-heavy queries (history, tags) to a read-only replica. Preferences and all writes stay on the primary to avoid replica lag.
+- Use a dedicated database and a dedicated user for Sonalyze only, and use that same user for `DATABASE_URL` and `DATABASE_READ_URL`. Never commit connection strings or hostnames.
 - Set `STORAGE_MODE=browser` to force browser mode even when `DATABASE_URL` is set.
 
 ---
@@ -344,7 +345,7 @@ History and tag controls are missing even though `DATABASE_URL` is set.
 # Browser mode (default)
 docker compose up --build
 
-# Postgres mode: set DATABASE_URL=postgres://sonalyze:sonalyze@db:5432/sonalyze in .env, then
+# Postgres mode: set DATABASE_URL=postgres://<user>:<password>@db:5432/<database> in .env, then
 docker compose --profile postgres up --build
 ```
 

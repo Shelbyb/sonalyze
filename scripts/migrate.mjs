@@ -27,7 +27,7 @@ try {
   }
   console.log('[migrate] up to date.');
 } catch (e) {
-  console.error('[migrate] failed, app will fall back to browser storage:', e.message);
+  console.error('[migrate] failed, app will fall back to browser storage. Reason:', e?.code ?? 'unknown error');
 } finally {
   await sql.end();
 }
