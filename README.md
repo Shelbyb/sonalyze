@@ -141,11 +141,11 @@ APP_URL=https://<your_domain_url>
 
 | Variable | Required | Scope | Details |
 |---|---|---|---|
-| `SPOTIFY_CLIENT_ID` | ✅ Yes | `RUN_AND_BUILD_TIME` | 🔒 **Secret.** Spotify Developer Application Client ID. |
-| `SPOTIFY_CLIENT_SECRET` | ✅ Yes | `RUN_AND_BUILD_TIME` | 🔒 **Secret.** Spotify Developer Application Client Secret. |
-| `NEXTAUTH_SECRET` | ✅ Yes | `RUN_AND_BUILD_TIME` | 🔒 **Secret.** Cryptographic secret used to sign and encrypt JWT cookies (`openssl rand -base64 48`). Rotating it invalidates existing sessions. |
+| `SPOTIFY_CLIENT_ID` | ✅ Yes | `RUN_TIME` | 🔒 **Secret.** Spotify Developer Application Client ID. |
+| `SPOTIFY_CLIENT_SECRET` | ✅ Yes | `RUN_TIME` | 🔒 **Secret.** Spotify Developer Application Client Secret. |
+| `NEXTAUTH_SECRET` | ✅ Yes | `RUN_TIME` | 🔒 **Secret.** Cryptographic secret used to sign and encrypt JWT cookies (`openssl rand -base64 48`). Rotating it invalidates existing sessions. |
 | `NEXTAUTH_URL` | ✅ Yes | `RUN_AND_BUILD_TIME` | Canonical authentication URL (`https://localhost:3000` locally, `${APP_URL}` in production). |
-| `DAYWALKER_API_KEY` | ✅ Yes | `RUN_AND_BUILD_TIME` | 🔒 **Secret.** Daywalker service API token (`srv_live_...`, or `enc:v1:` encrypted). |
+| `DAYWALKER_API_KEY` | ✅ Yes | `RUN_TIME` | 🔒 **Secret.** Daywalker service API token (`srv_live_...`, or `enc:v1:` encrypted). |
 | `DAYWALKER_SIGNING_KEY` | ⚠️ Recommended | `RUN_TIME` | 🔒 **Secret.** Ed25519 PKCS#8 key used to sign outbound validate requests with RFC 9421 / RFC 9530 HTTP Message Signatures. |
 | `DAYWALKER_KEY_ID` | ➖ Optional | `RUN_TIME` | RFC 7638 JWK thumbprint or key identifier registered in Daywalker Auth. |
 | `DAYWALKER_SIGNING_DOMAIN` | ➖ Optional | `RUN_TIME` | Public hostname the signature is issued for (`sonalyze.daywalker.dev`). Takes precedence over `APP_URL`. |
