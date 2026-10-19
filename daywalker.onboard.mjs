@@ -1,4 +1,4 @@
-// Project hook for `npx daywalker onboard` (SDK 0.10.0+).
+// Project hook for `npx daywalker onboard` (SDK 0.17.0+).
 const LOCAL = 'https://localhost:3000';
 
 export default {

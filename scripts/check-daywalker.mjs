@@ -25,9 +25,9 @@ export function collectProblems() {
         problems.push(
           '@shelbyb/daywalker-sdk is missing from dependencies in package.json',
         );
-      } else if (sdkVersion !== '0.10.0') {
+      } else if (sdkVersion !== '0.17.0') {
         problems.push(
-          `@shelbyb/daywalker-sdk must be exactly pinned to '0.10.0' (found '${sdkVersion}')`,
+          `@shelbyb/daywalker-sdk must be exactly pinned to '0.17.0' (found '${sdkVersion}')`,
         );
       }
 
@@ -65,9 +65,9 @@ export function collectProblems() {
   } else {
     try {
       const installedPkg = JSON.parse(readFileSync(installedPkgPath, 'utf8'));
-      if (installedPkg.version !== '0.10.0') {
+      if (installedPkg.version !== '0.17.0') {
         problems.push(
-          `Installed @shelbyb/daywalker-sdk version is ${installedPkg.version}, expected 0.10.0`,
+          `Installed @shelbyb/daywalker-sdk version is ${installedPkg.version}, expected 0.17.0`,
         );
       }
     } catch (e) {
@@ -91,9 +91,9 @@ export function collectProblems() {
       if (!pkgEntry) {
         problems.push('@shelbyb/daywalker-sdk entry missing in package-lock.json');
       } else {
-        if (pkgEntry.version !== '0.10.0') {
+        if (pkgEntry.version !== '0.17.0') {
           problems.push(
-            `package-lock.json has @shelbyb/daywalker-sdk version ${pkgEntry.version}, expected 0.10.0`,
+            `package-lock.json has @shelbyb/daywalker-sdk version ${pkgEntry.version}, expected 0.17.0`,
           );
         }
         if (!pkgEntry.integrity || typeof pkgEntry.integrity !== 'string') {
