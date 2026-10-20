@@ -39,6 +39,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Ensure public folder exists in runner stage and copy assets
 RUN mkdir -p /app/public
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/LICENSE ./LICENSE
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing

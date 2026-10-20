@@ -45,6 +45,7 @@ No database is required. By default Sonalyze runs in **browser storage mode**, w
 - [9. Security & Hardening Safeguards](#-9-security--hardening-safeguards)
 - [10. Troubleshooting](#-10-troubleshooting)
 - [Docker & Compose](#-docker--compose)
+- [License](#-license)
 
 ---
 
@@ -455,3 +456,11 @@ docker compose --profile postgres up --build
 ```
 
 The image entrypoint runs `scripts/migrate.mjs` only when `DATABASE_URL` is set, then starts `server.js`. For DigitalOcean, see the commented optional `DATABASE_URL` and `databases` blocks in [`.do/app.yaml`](./.do/app.yaml) and [`.do/deploy.template.yaml`](./.do/deploy.template.yaml).
+
+---
+
+## License
+
+This project is licensed under the **DevPulse Source-Available License** (source-available, not open source).
+It is free to view, self-host, and modify, but requires `@shelbyb/daywalker-sdk`
+for license verification and rate-limiting enforcement. See [LICENSE](./LICENSE) for details.

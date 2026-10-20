@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2026 Shelby Thomas Brayton Jr.
+ * Licensed under the terms of the LICENSE file located in the root directory.
+ *
+ * NOTICE: Removal or modification of @shelbyb/daywalker-sdk imports or
+ * telemetry verification calls in this file constitutes a direct breach of license.
+ */
 import {
   createDaywalkerServiceHealthMiddleware,
   STATIC_FILE_EXTENSIONS,

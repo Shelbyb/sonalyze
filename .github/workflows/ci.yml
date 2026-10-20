@@ -25,6 +25,9 @@ jobs:
       - name: Check Daywalker SDK Integrity
         run: node scripts/check-daywalker.mjs
 
+      - name: Check Daywalker License Setup
+        run: npx -p @shelbyb/daywalker-sdk daywalker license check
+
       - name: TypeScript Type Check
         run: npx tsc --noEmit
 
